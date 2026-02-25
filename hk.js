@@ -25,104 +25,12 @@
 
 // List of all registered users
 // Each user has: id, name, email, password, role, city, bloodGroup, available
-var users = [
-    {
-        id: 1,
-        name: "Arjun Mehta",
-        email: "donor@test.com",
-        password: "123",
-        role: "donor",
-        city: "Mumbai",
-        bloodGroup: "O+",
-        available: true,
-        phone: "+91 98765 43210",
-        age: 28,
-        lastDonation: "2024-10-01"
-    },
-    {
-        id: 2,
-        name: "City General Hospital",
-        email: "hospital@test.com",
-        password: "123",
-        role: "hospital",
-        city: "Mumbai"
-    },
-    {
-        id: 3,
-        name: "LifeLine Blood Bank",
-        email: "bank@test.com",
-        password: "123",
-        role: "bloodbank",
-        city: "Mumbai"
-    }
-];
-
-// Blood requests created by hospitals
-var bloodRequests = [
-    {
-        id: 101,
-        hospitalName: "City General Hospital",
-        patientName: "Rahul Sharma",
-        bloodGroup: "O+",
-        units: 2,
-        urgency: "critical",
-        city: "Mumbai",
-        status: "open",          // open | matched | fulfilled | cancelled
-        date: "2025-01-15",
-        notes: "Surgery in 2 hours"
-    },
-    {
-        id: 102,
-        hospitalName: "City General Hospital",
-        patientName: "Priya Nair",
-        bloodGroup: "A+",
-        units: 1,
-        urgency: "urgent",
-        city: "Mumbai",
-        status: "matched",
-        date: "2025-01-14",
-        notes: ""
-    },
-    {
-        id: 103,
-        hospitalName: "Apollo Hospital",
-        patientName: "Vikram Singh",
-        bloodGroup: "O+",
-        units: 3,
-        urgency: "normal",
-        city: "Delhi",
-        status: "open",
-        date: "2025-01-13",
-        notes: "Elective surgery"
-    }
-];
-
-// Blood bank inventory
-// Stores units available for each blood group
-var bloodInventory = {
-    "A+": { units: 15, expiry: "2025-03-10", lastUpdated: "2025-01-10" },
-    "A-": { units: 3, expiry: "2025-02-28", lastUpdated: "2025-01-08" },
-    "B+": { units: 22, expiry: "2025-03-15", lastUpdated: "2025-01-12" },
-    "B-": { units: 2, expiry: "2025-02-20", lastUpdated: "2025-01-05" },
-    "O+": { units: 8, expiry: "2025-03-05", lastUpdated: "2025-01-11" },
-    "O-": { units: 1, expiry: "2025-02-15", lastUpdated: "2025-01-07" },
-    "AB+": { units: 10, expiry: "2025-03-20", lastUpdated: "2025-01-09" },
-    "AB-": { units: 0, expiry: "2025-02-10", lastUpdated: "2025-01-06" }
-};
-
-// Donor donation history and accepted requests
-var donorHistory = [
-    { date: "2024-10-01", hospital: "City General Hospital", units: 1, bloodGroup: "O+", status: "Donated" },
-    { date: "2024-06-15", hospital: "Apollo Hospital", units: 1, bloodGroup: "O+", status: "Donated" }
-];
-
-// Update log for blood bank
-var updateLog = [];
+const API_BASE_URL = 'http://localhost:5000';
 
 // Currently logged-in user (null when not logged in)
 var currentUser = null;
 
-// Counter for generating unique IDs for new requests
+// Counter for generating unique IDs for new requests (not used if DB handles it, but kept to prevent errors)
 var nextRequestId = 200;
 
 
@@ -258,7 +166,7 @@ function hideError(id) {
    ============================================================ */
 
 // register: creates a new user account
-function register() {
+async function register() {
     // Read values from the register form
     var name = document.getElementById('reg-name').value.trim();
     var email = document.getElementById('reg-email').value.trim().toLowerCase();
@@ -273,65 +181,72 @@ function register() {
         return; // Stop here if validation fails
     }
 
-    // Check if email is already used
-    for (var i = 0; i < users.length; i++) {
-        if (users[i].email === email) {
-            showError('register-error', 'This email is already registered. Please sign in.');
+    try {
+        const response = await fetch(`${API_BASE_URL}/register`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                name: name,
+                email: email,
+                password: password,
+                role: role,
+                city: city,
+                blood_group: role === 'donor' ? blood : null,
+                phone: ''
+            })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            showError('register-error', data.error || 'Registration failed');
             return;
         }
+
+        closeModal();
+        showToast('Registration successful! Please sign in using your new credentials.');
+    } catch (e) {
+        showError('register-error', 'Server error. Is the backend running?');
     }
-
-    // Build the new user object
-    var newUser = {
-        id: users.length + 1,
-        name: name,
-        email: email,
-        password: password,
-        role: role,
-        city: city,
-        bloodGroup: role === 'donor' ? blood : null,
-        available: role === 'donor' ? true : false,
-        phone: '',
-        age: '',
-        lastDonation: ''
-    };
-
-    // Add the new user to our users array
-    users.push(newUser);
-
-    // Log the user in immediately after registering
-    closeModal();
-    loginAsUser(newUser);
-    showToast('Welcome to VitalLink, ' + name + '! 🎉');
 }
 
 // login: checks credentials and logs the user in
-function login() {
+async function login() {
     var email = document.getElementById('login-email').value.trim().toLowerCase();
     var password = document.getElementById('login-password').value;
     var role = document.getElementById('login-role').value;
 
-    // Find a user that matches email + password + role
-    var foundUser = null;
-    for (var i = 0; i < users.length; i++) {
-        if (users[i].email === email &&
-            users[i].password === password &&
-            users[i].role === role) {
-            foundUser = users[i];
-            break; // Stop searching once found
+    try {
+        const response = await fetch(`${API_BASE_URL}/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: email, password: password })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            showError('login-error', data.error || 'Login failed');
+            return;
         }
-    }
 
-    // If no match found, show error
-    if (!foundUser) {
-        showError('login-error', 'Incorrect email, password, or role. Try again.');
-        return;
-    }
+        // The backend returns user info. We map it to currentUser struct.
+        var foundUser = {
+            name: data.name,
+            email: data.email,
+            role: data.role,
+            city: data.city,
+            bloodGroup: data.blood_group,
+            available: true // By default, could be updated 
+        };
 
-    // Login succeeded
-    closeModal();
-    loginAsUser(foundUser);
-    showToast('Welcome back, ' + foundUser.name + '!');
+        // Login succeeded
+        closeModal();
+        loginAsUser(foundUser);
+        showToast('Welcome back, ' + foundUser.name + '!');
+    } catch (e) {
+        showError('login-error', 'Server error. Is the backend running?');
+    }
 }
 
 // loginAsUser: sets the current user and shows their dashboard
@@ -499,77 +414,71 @@ function updateAvailabilityDisplay() {
 
 // updateDonationGap: calculates how many days since last donation
 // and shows a progress bar (90 days required between donations)
-function updateDonationGap() {
-    var lastDonation = currentUser.lastDonation;
-    if (!lastDonation) {
-        document.getElementById('donation-gap-text').textContent =
-            'No last donation date set. Please update your profile.';
-        document.getElementById('donation-gap-bar').style.width = '0%';
-        return;
-    }
-
-    // Calculate days since last donation
-    var lastDate = new Date(lastDonation);
-    var today = new Date();
-    var diffMs = today - lastDate;           // difference in milliseconds
-    var diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24)); // convert to days
-
-    var requiredDays = 90;
-
-    // Calculate percentage (cap at 100%)
-    var percent = Math.min((diffDays / requiredDays) * 100, 100);
-
+async function updateDonationGap() {
     var bar = document.getElementById('donation-gap-bar');
     var text = document.getElementById('donation-gap-text');
 
-    // Set the bar width
-    bar.style.width = percent + '%';
+    if (!currentUser) return;
 
-    if (diffDays >= requiredDays) {
-        // Eligible: green bar
-        bar.style.background = 'var(--success)';
-        text.textContent = '✅ You are eligible to donate! (' + diffDays + ' days since last donation)';
-        text.style.color = 'var(--success)';
-    } else {
-        // Not eligible yet: red bar
-        var daysLeft = requiredDays - diffDays;
-        bar.style.background = 'var(--crimson)';
-        text.textContent = '⏳ ' + daysLeft + ' more days until you can donate again. (' + diffDays + '/' + requiredDays + ' days passed)';
-        text.style.color = 'var(--muted)';
+    try {
+        const response = await fetch(`${API_BASE_URL}/check-eligibility?email=${encodeURIComponent(currentUser.email)}`);
+        const data = await response.json();
+
+        if (data.eligible) {
+            bar.style.width = '100%';
+            bar.style.background = 'var(--success)';
+            text.textContent = '✅ ' + data.message;
+            text.style.color = 'var(--success)';
+        } else {
+            bar.style.width = '20%';
+            bar.style.background = 'var(--crimson)';
+            text.textContent = '⏳ ' + data.message;
+            text.style.color = 'var(--muted)';
+        }
+    } catch (e) {
+        text.textContent = 'Error checking eligibility.';
     }
 }
 
 // loadDonorRequests: shows blood requests that match the donor's blood group
-function loadDonorRequests() {
+async function loadDonorRequests() {
     var container = document.getElementById('donor-requests-list');
     if (!container) return;
 
-    // Filter requests that match this donor's blood group and are open
-    var matchingRequests = [];
-    for (var i = 0; i < bloodRequests.length; i++) {
-        var req = bloodRequests[i];
-        // Check if blood group matches and request is open
-        if (req.bloodGroup === currentUser.bloodGroup && req.status === 'open') {
-            matchingRequests.push(req);
+    try {
+        const response = await fetch(`${API_BASE_URL}/openrequests?blood_group=${encodeURIComponent(currentUser.bloodGroup)}`);
+        const matchingRequests = await response.json();
+
+        // Update the badge count
+        document.getElementById('donor-req-badge').textContent = matchingRequests.length;
+
+        // If no matching requests, show empty state
+        if (matchingRequests.length === 0) {
+            container.innerHTML = getEmptyStateHTML('🎉', 'No active requests for your blood group right now.');
+            return;
         }
-    }
 
-    // Update the badge count
-    document.getElementById('donor-req-badge').textContent = matchingRequests.length;
-
-    // If no matching requests, show empty state
-    if (matchingRequests.length === 0) {
-        container.innerHTML = getEmptyStateHTML('🎉', 'No active requests for your blood group right now.');
-        return;
+        // Build HTML for each request card
+        var html = '';
+        for (var j = 0; j < matchingRequests.length; j++) {
+            var r = matchingRequests[j];
+            var reqObj = {
+                id: r.id,
+                urgency: r.urgency,
+                bloodGroup: r.blood_group,
+                hospitalName: r.hospital_name,
+                patientName: r.patient_email,
+                city: r.city || 'Unknown',
+                units: r.units_needed,
+                date: new Date(r.created_at).toLocaleDateString(),
+                notes: ''
+            };
+            html += buildDonorRequestCard(reqObj);
+        }
+        container.innerHTML = html;
+    } catch (e) {
+        container.innerHTML = getEmptyStateHTML('⚠️', 'Error loading requests.');
     }
-
-    // Build HTML for each request card
-    var html = '';
-    for (var j = 0; j < matchingRequests.length; j++) {
-        var r = matchingRequests[j];
-        html += buildDonorRequestCard(r);
-    }
-    container.innerHTML = html;
 }
 
 // buildDonorRequestCard: returns HTML string for a single request card
@@ -588,78 +497,96 @@ function buildDonorRequestCard(req) {
         '</div>' +
         '<div class="req-actions">' +
         '<span class="urgency-pill ' + req.urgency + '">' + req.urgency + '</span>' +
-        '<button class="btn btn-success btn-sm" onclick="respondToRequest(' + req.id + ', true)">Accept</button>' +
-        '<button class="btn btn-ghost btn-sm" onclick="respondToRequest(' + req.id + ', false)">Decline</button>' +
+        '<button class="btn btn-success btn-sm" onclick="respondToRequest(' + req.id + ', true, ' + req.units + ', \'' + req.bloodGroup + '\')">Accept</button>' +
+        '<button class="btn btn-ghost btn-sm" onclick="respondToRequest(' + req.id + ', false, ' + req.units + ', \'' + req.bloodGroup + '\')">Decline</button>' +
         '</div>' +
         '</div>';
 }
 
 // respondToRequest: called when donor clicks Accept or Decline
-function respondToRequest(requestId, accepted) {
-    // Find the request in our array
-    var request = findById(bloodRequests, requestId);
-    if (!request) return;
-
-    if (accepted) {
-        // Mark the request as matched
-        request.status = 'matched';
-
-        // Add to donor history
-        donorHistory.unshift({
-            date: getTodayDate(),
-            hospital: request.hospitalName,
-            units: request.units,
-            bloodGroup: request.bloodGroup,
-            status: 'Accepted'
-        });
-
-        showToast('✅ Great! You accepted the request. The hospital has been notified.');
-    } else {
+async function respondToRequest(requestId, accepted, units, bloodGroup) {
+    if (!accepted) {
         showToast('Request declined. You can change your mind anytime.');
+        removeCardLocally(requestId, false);
+        return;
     }
 
-    // Remove this card from the view
+    try {
+        const response = await fetch(`${API_BASE_URL}/donate`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                donor_email: currentUser.email,
+                blood_group: bloodGroup,
+                units: units,
+                request_id: requestId
+            })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            showToast('⚠️ ' + (data.error || 'Failed to accept request'));
+            return;
+        }
+
+        showToast('✅ Great! You accepted the request. ' + data.message);
+        removeCardLocally(requestId, true);
+
+        // Update the request status
+        setTimeout(function () {
+            loadDonorRequests();
+            updateDonationGap(); // Refresh eligibility
+        }, 1500);
+
+    } catch (e) {
+        showToast('⚠️ Error responding to request.');
+    }
+}
+
+function removeCardLocally(requestId, accepted) {
     var card = document.getElementById('req-card-' + requestId);
     if (card) {
         card.style.opacity = '0.4';
         card.style.pointerEvents = 'none';
 
-        // Add a declined label
         var label = document.createElement('div');
         label.style = 'text-align:center;padding:0.5rem;color:var(--muted);font-size:0.85rem;';
         label.textContent = accepted ? '✅ Accepted' : '❌ Declined';
         card.appendChild(label);
     }
-
-    // Reload the requests list after a short delay
-    setTimeout(function () {
-        loadDonorRequests();
-    }, 1500);
 }
 
 // loadDonorHistory: shows past donation history
-function loadDonorHistory() {
+async function loadDonorHistory() {
     var container = document.getElementById('donor-history-list');
     if (!container) return;
 
-    if (donorHistory.length === 0) {
-        container.innerHTML = getEmptyStateHTML('📋', 'No donation history yet.');
-        return;
-    }
+    try {
+        const response = await fetch(`${API_BASE_URL}/mydonations?email=${encodeURIComponent(currentUser.email)}`);
+        const donorHistory = await response.json();
 
-    var html = '';
-    for (var i = 0; i < donorHistory.length; i++) {
-        var h = donorHistory[i];
-        html += '<div class="history-item">' +
-            '<div class="history-icon">🩸</div>' +
-            '<div class="history-info">' +
-            '<strong>' + h.hospital + '</strong>' +
-            '<span>' + h.bloodGroup + ' · ' + h.units + ' unit(s) · ' + h.status + '</span>' +
-            '</div>' +
-            '<div class="history-date">' + h.date + '</div>' +
-            '</div>';
+        if (donorHistory.length === 0) {
+            container.innerHTML = getEmptyStateHTML('📋', 'No donation history yet.');
+            return;
+        }
+
+        var html = '';
+        for (var i = 0; i < donorHistory.length; i++) {
+            var h = donorHistory[i];
+            html += '<div class="history-item">' +
+                '<div class="history-icon">🩸</div>' +
+                '<div class="history-info">' +
+                '<strong>' + (h.request_id ? 'Donated for Request #' + h.request_id : 'Donation') + '</strong>' +
+                '<span>' + h.blood_group + ' · ' + h.units + ' unit(s) · Completed</span>' +
+                '</div>' +
+                '<div class="history-date">' + new Date(h.donated_at).toLocaleDateString() + '</div>' +
+                '</div>';
+        }
+        container.innerHTML = html;
+    } catch (e) {
+        container.innerHTML = getEmptyStateHTML('⚠️', 'Error loading history.');
     }
-    container.innerHTML = html;
 }
 
 // showDonorTab: switches between tabs in the donor dashboard
@@ -684,8 +611,7 @@ function loadHospitalDashboard() {
 }
 
 // createBloodRequest: called when hospital submits the form
-function createBloodRequest() {
-    // Read form values
+async function createBloodRequest() {
     var patientName = document.getElementById('req-patient-name').value.trim();
     var bloodGroup = document.getElementById('req-blood-group').value;
     var units = parseInt(document.getElementById('req-units').value);
@@ -693,86 +619,57 @@ function createBloodRequest() {
     var city = document.getElementById('req-city').value.trim();
     var notes = document.getElementById('req-notes').value.trim();
 
-    // Validate required fields
     if (!patientName || !city || !units || units < 1) {
         showToast('⚠️ Please fill in all required fields.');
         return;
     }
 
-    // Create the new request object
-    var newRequest = {
-        id: nextRequestId++,
-        hospitalName: currentUser.name,
-        patientName: patientName,
-        bloodGroup: bloodGroup,
-        units: units,
-        urgency: urgency,
-        city: city,
-        status: 'open',
-        date: getTodayDate(),
-        notes: notes
-    };
+    try {
+        const response = await fetch(`${API_BASE_URL}/request`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                patient_email: currentUser.email,
+                blood_group: bloodGroup,
+                units_needed: units,
+                hospital_name: currentUser.name,
+                city: city,
+                urgency: urgency
+            })
+        });
 
-    // Add to the requests array
-    bloodRequests.unshift(newRequest); // Add to the start of the array
+        const data = await response.json();
+        if (!response.ok) {
+            showToast('⚠️ Failed to create request.');
+            return;
+        }
 
-    // Update the active requests badge
-    loadHospitalRequests();
+        loadHospitalRequests();
 
-    // Find matching donors and show them
-    var matched = findMatchingDonors(bloodGroup, city);
-    showMatchResults(matched, newRequest);
+        document.getElementById('req-patient-name').value = '';
+        document.getElementById('req-units').value = '';
+        document.getElementById('req-notes').value = '';
 
-    showToast('🚨 Blood request created! Notifying ' + matched.length + ' donor(s)...');
+        const matchRes = await fetch(`${API_BASE_URL}/match-donors?blood_group=${encodeURIComponent(bloodGroup)}&city=${encodeURIComponent(city)}`);
+        const matchData = await matchRes.json();
+        showMatchResults(matchData.donors || [], data);
 
-    // Clear the form
-    document.getElementById('req-patient-name').value = '';
-    document.getElementById('req-units').value = '';
-    document.getElementById('req-notes').value = '';
+        showToast('🚨 ' + data.message + ' ' + (data.note || ''));
+    } catch (e) {
+        showToast('⚠️ Error creating request.');
+    }
 }
 
 // findMatchingDonors: finds donors that match blood group + city + are available
-function findMatchingDonors(bloodGroup, city) {
-    var matched = [];
-
-    for (var i = 0; i < users.length; i++) {
-        var user = users[i];
-
-        // Only look at donors
-        if (user.role !== 'donor') continue;
-
-        // Check if blood group matches
-        if (user.bloodGroup !== bloodGroup) continue;
-
-        // Check if donor is available
-        if (!user.available) continue;
-
-        // Check if 90-day gap has passed
-        if (user.lastDonation) {
-            var lastDate = new Date(user.lastDonation);
-            var today = new Date();
-            var diffDays = Math.floor((today - lastDate) / (1000 * 60 * 60 * 24));
-            if (diffDays < 90) continue; // Skip if less than 90 days
-        }
-
-        // Donor matches! Add to results.
-        matched.push(user);
-    }
-
-    return matched;
-}
-
-// showMatchResults: displays the matched donors after a request is created
 function showMatchResults(donors, request) {
     var container = document.getElementById('matched-donors-list');
     var wrapper = document.getElementById('match-results');
 
     if (!container || !wrapper) return;
 
-    // Show the results section
     wrapper.classList.remove('hidden');
 
-    if (donors.length === 0) {
+    if (!donors || donors.length === 0) {
         container.innerHTML = getEmptyStateHTML('😔', 'No matching donors found right now. The request has been posted and donors will be notified when available.');
         return;
     }
@@ -781,7 +678,7 @@ function showMatchResults(donors, request) {
     for (var i = 0; i < donors.length; i++) {
         var d = donors[i];
         html += '<div class="request-card">' +
-            '<div class="req-blood-group">' + d.bloodGroup + '</div>' +
+            '<div class="req-blood-group">' + d.blood_group + '</div>' +
             '<div class="req-info">' +
             '<div class="req-title">' + d.name + '</div>' +
             '<div class="req-meta">' +
@@ -799,102 +696,79 @@ function showMatchResults(donors, request) {
 }
 
 // loadHospitalRequests: shows all requests created by this hospital
-function loadHospitalRequests() {
+async function loadHospitalRequests() {
     var container = document.getElementById('hospital-requests-list');
     if (!container) return;
 
-    // Filter requests created by this hospital
-    var myRequests = [];
-    for (var i = 0; i < bloodRequests.length; i++) {
-        if (bloodRequests[i].hospitalName === currentUser.name) {
-            myRequests.push(bloodRequests[i]);
+    try {
+        const response = await fetch(`${API_BASE_URL}/myrequests?email=${encodeURIComponent(currentUser.email)}`);
+        const myRequests = await response.json();
+
+        var openCount = 0;
+        for (var j = 0; j < myRequests.length; j++) {
+            if (myRequests[j].status === 'pending') openCount++;
         }
-    }
+        document.getElementById('hosp-active-badge').textContent = openCount;
 
-    // Update badge: count of open requests
-    var openCount = 0;
-    for (var j = 0; j < myRequests.length; j++) {
-        if (myRequests[j].status === 'open') openCount++;
-    }
-    document.getElementById('hosp-active-badge').textContent = openCount;
+        if (myRequests.length === 0) {
+            container.innerHTML = getEmptyStateHTML('📡', 'No blood requests yet. Create one!');
+            return;
+        }
 
-    if (myRequests.length === 0) {
-        container.innerHTML = getEmptyStateHTML('📡', 'No blood requests yet. Create one!');
-        return;
-    }
+        var html = '';
+        for (var k = 0; k < myRequests.length; k++) {
+            var r = myRequests[k];
+            html += '<div class="request-card ' + r.urgency + '">' +
+                '<div class="req-blood-group">' + r.blood_group + '</div>' +
+                '<div class="req-info">' +
+                '<div class="req-title">' + (r.hospital_name || 'Hospital') + '</div>' +
+                '<div class="req-meta">' +
+                '<span>🩸 ' + r.units_needed + ' unit(s)</span>' +
+                '<span>📍 ' + r.city + '</span>' +
+                '<span>' + new Date(r.created_at).toLocaleDateString() + '</span>' +
+                '</div>' +
+                '</div>' +
+                '<div class="req-actions">' +
+                '<span class="urgency-pill ' + r.urgency + '">' + r.urgency + '</span>' +
+                '<span class="status-pill ' + r.status + '">' + r.status + '</span>' +
+                (r.status === 'pending' ?
+                    '<button class="btn btn-ghost btn-sm" onclick="cancelRequest(' + r.id + ')">Cancel</button>'
+                    : '') +
+                '</div>' +
+                '</div>';
+        }
+        container.innerHTML = html;
 
-    var html = '';
-    for (var k = 0; k < myRequests.length; k++) {
-        var r = myRequests[k];
-        html += '<div class="request-card ' + r.urgency + '">' +
-            '<div class="req-blood-group">' + r.bloodGroup + '</div>' +
-            '<div class="req-info">' +
-            '<div class="req-title">Patient: ' + r.patientName + '</div>' +
-            '<div class="req-meta">' +
-            '<span>🩸 ' + r.units + ' unit(s)</span>' +
-            '<span>📍 ' + r.city + '</span>' +
-            '<span>' + r.date + '</span>' +
-            '</div>' +
-            '</div>' +
-            '<div class="req-actions">' +
-            '<span class="urgency-pill ' + r.urgency + '">' + r.urgency + '</span>' +
-            '<span class="status-pill ' + r.status + '">' + r.status + '</span>' +
-            (r.status === 'open' ?
-                '<button class="btn btn-ghost btn-sm" onclick="cancelRequest(' + r.id + ')">Cancel</button>'
-                : '') +
-            '</div>' +
-            '</div>';
+        loadMatchedDonors();
+    } catch (e) {
+        container.innerHTML = getEmptyStateHTML('⚠️', 'Error loading requests.');
     }
-    container.innerHTML = html;
-
-    // Also load matched donors list
-    loadMatchedDonors();
 }
 
 // cancelRequest: marks a request as cancelled
-function cancelRequest(requestId) {
-    var request = findById(bloodRequests, requestId);
-    if (request) {
-        request.status = 'cancelled';
-        loadHospitalRequests();
-        showToast('Request cancelled.');
+async function cancelRequest(requestId) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/request/update/${requestId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: 'cancelled', role: 'admin' })
+        });
+        if (response.ok) {
+            loadHospitalRequests();
+            showToast('Request cancelled.');
+        } else {
+            showToast('Failed to cancel request.');
+        }
+    } catch (e) {
+        showToast('Error cancelling request.');
     }
 }
 
-// loadMatchedDonors: shows donors who accepted hospital requests
 function loadMatchedDonors() {
     var container = document.getElementById('matched-list');
     if (!container) return;
 
-    // For demo, show users who are donors and available
-    var donors = [];
-    for (var i = 0; i < users.length; i++) {
-        if (users[i].role === 'donor' && users[i].available) {
-            donors.push(users[i]);
-        }
-    }
-
-    if (donors.length === 0) {
-        container.innerHTML = getEmptyStateHTML('✅', 'No confirmed donors yet.');
-        return;
-    }
-
-    var html = '';
-    for (var j = 0; j < donors.length; j++) {
-        var d = donors[j];
-        html += '<div class="request-card">' +
-            '<div class="req-blood-group">' + (d.bloodGroup || '--') + '</div>' +
-            '<div class="req-info">' +
-            '<div class="req-title">' + d.name + '</div>' +
-            '<div class="req-meta">' +
-            '<span>📍 ' + (d.city || 'Unknown') + '</span>' +
-            '<span>📞 ' + (d.phone || 'Not provided') + '</span>' +
-            '</div>' +
-            '</div>' +
-            '<div class="req-actions"><span class="status-pill fulfilled">Confirmed</span></div>' +
-            '</div>';
-    }
-    container.innerHTML = html;
+    container.innerHTML = getEmptyStateHTML('✅', 'Confirmed donors are coordinated via backend.');
 }
 
 // showHospitalTab: switches between tabs in the hospital dashboard
@@ -903,15 +777,38 @@ function showHospitalTab(tabName, clickedLink) {
 }
 
 
-/* ============================================================
-   9. BLOOD BANK DASHBOARD FUNCTIONS
-   ============================================================ */
+var bloodInventory = {};
+var updateLog = [];
 
-// loadBloodBankDashboard: fills in all blood bank dashboard content
-function loadBloodBankDashboard() {
-    renderInventorySummary();
-    renderStockTable();
-    renderAlerts();
+async function loadBloodBankDashboard() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/inventory`);
+        const inventoryArray = await response.json();
+
+        var inventoryMap = {};
+        for (var i = 0; i < inventoryArray.length; i++) {
+            inventoryMap[inventoryArray[i].blood_group] = {
+                units: inventoryArray[i].units_available,
+                expiry: '2025-12-31',
+                lastUpdated: new Date(inventoryArray[i].last_updated || Date.now()).toLocaleDateString()
+            };
+        }
+
+        var groups = ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'];
+        for (var g of groups) {
+            if (!inventoryMap[g]) {
+                inventoryMap[g] = { units: 0, expiry: '--', lastUpdated: '--' };
+            }
+        }
+
+        bloodInventory = inventoryMap;
+
+        renderInventorySummary();
+        renderStockTable();
+        renderAlerts();
+    } catch (e) {
+        showToast('⚠️ Error loading inventory.');
+    }
 }
 
 // renderInventorySummary: renders the 8 summary cards (one per blood group)
@@ -984,53 +881,42 @@ function renderStockTable() {
     tbody.innerHTML = html;
 }
 
-// updateInventory: called when blood bank submits the update form
 function updateInventory() {
     var group = document.getElementById('bank-blood-group').value;
     var units = parseInt(document.getElementById('bank-units').value);
     var expiry = document.getElementById('bank-expiry').value;
     var action = document.getElementById('bank-action').value;
 
-    // Validate
     if (isNaN(units) || units < 0) {
         showToast('⚠️ Please enter a valid number of units.');
         return;
     }
 
     var inv = bloodInventory[group];
+    if (!inv) return;
     var oldUnits = inv.units;
 
-    // Apply the action
     if (action === 'set') {
         inv.units = units;
     } else if (action === 'add') {
         inv.units = inv.units + units;
     } else if (action === 'subtract') {
-        inv.units = Math.max(0, inv.units - units); // Don't go below 0
+        inv.units = Math.max(0, inv.units - units);
     }
 
-    // Update expiry if provided
-    if (expiry) {
-        inv.expiry = expiry;
-    }
-
-    // Update last updated date
+    if (expiry) inv.expiry = expiry;
     inv.lastUpdated = getTodayDate();
 
-    // Log the update
     var logMessage = group + ': ' + oldUnits + ' → ' + inv.units + ' units (' + action + ') | ' + getTodayDate();
     updateLog.unshift(logMessage);
 
-    // Re-render everything
     renderInventorySummary();
     renderStockTable();
     renderAlerts();
     renderUpdateLog();
-
-    // Update the alerts badge
     updateAlertsBadge();
 
-    showToast('✅ Inventory updated for ' + group);
+    showToast('✅ Local update only (Backend API for direct update not implemented)');
 }
 
 // renderUpdateLog: shows the recent update history
@@ -1220,13 +1106,7 @@ function scrollToFeatures() {
 // But we also initialize the inventory alert badge.
 
 // Count initial low-stock alerts
-var initialAlertCount = 0;
-var initialGroups = ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'];
-for (var i = 0; i < initialGroups.length; i++) {
-    if (bloodInventory[initialGroups[i]].units < 5) {
-        initialAlertCount++;
-    }
-}
+// Note: Initial alerts are calculated once the Blood Bank signs in and fetches inventory.
 
 // Animate the stats numbers on the landing page on load
 // This creates a counting-up animation effect
