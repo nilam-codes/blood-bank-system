@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <!-- Make it responsive on all screen sizes -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>VitalLink — Smart Blood Donation System</title>
+
+    <!-- Google Fonts: Syne for headings, DM Sans for body -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap"
+        rel="stylesheet" />
+
+    <!-- Our stylesheet -->
+    <link rel="stylesheet" href="hk.css" />
+</head>
+
+<body>
+
+    <!-- ============================================================
+       SECTION 1: NAVIGATION BAR
+  ============================================================ -->
+    <nav class="navbar" id="navbar">
+        <div class="nav-inner">
+            <a href="#" class="logo" onclick="showPage('landing')">
+                <span class="logo-icon">🩸</span>
+                <span class="logo-text">VitalLink</span>
+            </a>
+            <div class="nav-actions" id="nav-actions">
+                <button class="btn btn-ghost" onclick="openModal('login')">Sign In</button>
+                <button class="btn btn-primary" onclick="openModal('register')">Join Now</button>
+            </div>
+            <div class="nav-user hidden" id="nav-user">
+                <span class="user-badge" id="user-role-badge"></span>
+                <span class="user-name" id="user-name-display"></span>
+                <button class="btn btn-ghost btn-sm" onclick="logout()">Logout</button>
+            </div>
+        </div>
+    </nav>
+
+
+    <!-- ============================================================
+       SECTION 2: LANDING PAGE
+  ============================================================ -->
+    <div id="page-landing" class="page active">
+
+        <section class="hero">
+            <div class="hero-bg-grid"></div>
+            <div class="hero-content">
+                <div class="hero-tag">🚨 Real-Time Blood Matching Platform</div>
+                <h1 class="hero-title">
+                    Every Second<br />
+                    <span class="hero-accent">Saves a Life</span>
+                </h1>
+                <p class="hero-subtitle">
+                    VitalLink connects donors, hospitals, and blood banks in real-time —
+                    reducing emergency response time and preventing blood shortages.
+                </p>
+                <div class="hero-cta">
+                    <button class="btn btn-primary btn-lg" onclick="openModal('register')">Become a Donor</button>
+                    <button class="btn btn-outline btn-lg" onclick="scrollToFeatures()">Learn More ↓</button>
+                </div>
+
+                <div class="stats-bar">
+                    <div class="stat-item">
+                        <span class="stat-number" id="stat-donors">1,284</span>
+                        <span class="stat-label">Active Donors</span>
+                    </div>
+                    <div class="stat-divider"></div>
+                    <div class="stat-item">
+                        <span class="stat-number" id="stat-requests">37</span>
+                        <span class="stat-label">Open Requests</span>
+                    </div>
+                    <div class="stat-divider"></div>
+                    <div class="stat-item">
+                        <span class="stat-number" id="stat-saved">8,921</span>
+                        <span class="stat-label">Lives Saved</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="hero-visual">
+                <div class="drop-container">
+                    <div class="blood-drop">🩸</div>
+                    <div class="pulse-ring"></div>
+                    <div class="pulse-ring delay-1"></div>
+                    <div class="pulse-ring delay-2"></div>
+                </div>
+                <div class="float-tag tag-1">A+</div>
+                <div class="float-tag tag-2">O-</div>
+                <div class="float-tag tag-3">B+</div>
+                <div class="float-tag tag-4">AB+</div>
+            </div>
+        </section>
+
+        <!-- Features Section -->
+        <section class="features-section" id="features">
+            <div class="section-header">
+                <h2 class="section-title">How VitalLink Works</h2>
+                <p class="section-sub">Three roles, one mission: saving lives faster</p>
+            </div>
+            <div class="features-grid">
+                <div class="feature-card" onclick="openModalWithRole('register','donor')">
+                    <div class="feature-icon">🧑</div>
+                    <h3>For Donors</h3>
+                    <p>Register your blood type, toggle your availability, and receive instant alerts when a nearby
+                        hospital urgently needs your blood group.</p>
+                    <ul class="feature-list">
+                        <li>✓ Profile & availability toggle</li>
+                        <li>✓ Nearby urgent requests</li>
+                        <li>✓ 90-day donation gap tracker</li>
+                        <li>✓ Accept / reject requests</li>
+                    </ul>
+                    <span class="feature-cta">Register as Donor →</span>
+                </div>
+
+                <div class="feature-card feature-card--center" onclick="openModalWithRole('register','hospital')">
+                    <div class="feature-badge">Most Used</div>
+                    <div class="feature-icon">🏥</div>
+                    <h3>For Hospitals</h3>
+                    <p>Create blood requests in seconds and let the system automatically match eligible donors nearby
+                        based on blood type and availability.</p>
+                    <ul class="feature-list">
+                        <li>✓ Create urgent blood requests</li>
+                        <li>✓ Auto-match eligible donors</li>
+                        <li>✓ Live request status tracking</li>
+                        <li>✓ Urgency prioritisation</li>
+                    </ul>
+                    <span class="feature-cta">Register as Hospital →</span>
+                </div>
+
+                <div class="feature-card" onclick="openModalWithRole('register','bloodbank')">
+                    <div class="feature-icon">🏦</div>
+                    <h3>For Blood Banks</h3>
+                    <p>Manage your blood inventory, monitor expiry dates, and receive automatic low-stock alerts before
+                        shortages occur.</p>
+                    <ul class="feature-list">
+                        <li>✓ Inventory management</li>
+                        <li>✓ Expiry date tracking</li>
+                        <li>✓ Low-stock alerts</li>
+                        <li>✓ Stock history logs</li>
+                    </ul>
+                    <span class="feature-cta">Register as Blood Bank →</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Steps Section -->
+        <section class="steps-section">
+            <div class="section-header">
+                <h2 class="section-title">The Flow</h2>
+                <p class="section-sub">From emergency to donation in 4 steps</p>
+            </div>
+            <div class="steps-flow">
+                <div class="step">
+                    <div class="step-num">01</div>
+                    <div class="step-content">
+                        <h4>Hospital Raises Request</h4>
+                        <p>A hospital submits a blood request with type, units needed, and urgency level.</p>
+                    </div>
+                </div>
+                <div class="step-arrow">→</div>
+                <div class="step">
+                    <div class="step-num">02</div>
+                    <div class="step-content">
+                        <h4>System Matches Donors</h4>
+                        <p>The algorithm finds eligible donors by blood type, location & donation gap.</p>
+                    </div>
+                </div>
+                <div class="step-arrow">→</div>
+                <div class="step">
+                    <div class="step-num">03</div>
+                    <div class="step-content">
+                        <h4>Donor Responds</h4>
+                        <p>Matched donors receive a notification and can accept or decline.</p>
+                    </div>
+                </div>
+                <div class="step-arrow">→</div>
+                <div class="step">
+                    <div class="step-num">04</div>
+                    <div class="step-content">
+                        <h4>Request Fulfilled</h4>
+                        <p>The hospital is notified. Blood bank inventory is updated automatically.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <footer class="footer">
+            <div class="footer-inner">
+                <span class="logo">🩸 VitalLink</span>
+                <p>Connecting lives. Saving futures.</p>
+                <p class="footer-copy">© 2025 VitalLink. Built for humanity.</p>
+            </div>
+        </footer>
+    </div>
+
+
+    <!-- ============================================================
+       SECTION 3: DONOR DASHBOARD
+  ============================================================ -->
+    <div id="page-donor" class="page">
+        <div class="dashboard">
+            <aside class="sidebar">
+                <div class="sidebar-brand">🩸 VitalLink</div>
+                <nav class="sidebar-nav">
+                    <a href="#" class="sidebar-link active" onclick="showDonorTab('profile', this)">
+                        <span>👤</span> My Profile
+                    </a>
+                    <a href="#" class="sidebar-link" onclick="showDonorTab('requests', this)">
+                        <span>🚨</span> Requests
+                        <span class="badge" id="donor-req-badge">3</span>
+                    </a>
+                    <a href="#" class="sidebar-link" onclick="showDonorTab('history', this)">
+                        <span>📋</span> My History
+                    </a>
+                </nav>
+                <div class="sidebar-footer">
+                    <button class="btn btn-ghost btn-sm full-width" onclick="logout()">← Logout</button>
+                </div>
+            </aside>
+
+            <main class="dash-main">
+
+                <!-- TAB: PROFILE -->
+                <div class="dash-tab active" id="donor-tab-profile">
+                    <div class="dash-header">
+                        <h2>My Donor Profile</h2>
+                        <p>Keep your info up-to-date so hospitals can reach you fast.</p>
+                    </div>
+
+                    <div class="profile-card">
+                        <div class="profile-avatar" id="donor-avatar">🧑</div>
+                        <div class="profile-info">
+                            <h3 id="donor-display-name">Loading...</h3>
+                            <p id="donor-display-city">City, Country</p>
+                            <div class="blood-badge" id="donor-blood-badge">A+</div>
+                        </div>
+                        <div class="availability-box">
+                            <p class="avail-label">Availability</p>
+                            <div class="toggle-wrap">
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="availability-toggle" onchange="toggleAvailability()" />
+                                    <span class="toggle-slider"></span>
+                                </label>
+                                <span class="toggle-status" id="toggle-status-text">Available</span>
+                            </div>
+                            <p class="avail-note" id="avail-note">You can receive requests.</p>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h4>Update Profile</h4>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Full Name</label>
+                                <input type="text" id="donor-name-input" class="input" placeholder="Your full name" />
+                            </div>
+                            <div class="form-group">
+                                <label>Phone Number</label>
+                                <input type="tel" id="donor-phone-input" class="input" placeholder="+91 99999 99999" />
+                            </div>
+                            <div class="form-group">
+                                <label>City</label>
+                                <input type="text" id="donor-city-input" class="input" placeholder="Your city" />
+                            </div>
+                            <div class="form-group">
+                                <label>Blood Group</label>
+                                <select id="donor-blood-input" class="input">
+                                    <option value="A+">A+</option>
+                                    <option value="A-">A-</option>
+                                    <option value="B+">B+</option>
+                                    <option value="B-">B-</option>
+                                    <option value="O+">O+</option>
+                                    <option value="O-">O-</option>
+                                    <option value="AB+">AB+</option>
+                                    <option value="AB-">AB-</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Last Donation Date</label>
+                                <input type="date" id="donor-last-donation" class="input" />
+                            </div>
+                            <div class="form-group">
+                                <label>Age</label>
+                                <input type="number" id="donor-age-input" class="input" placeholder="25" min="18"
+                                    max="65" />
+                            </div>
+                        </div>
+                        <button class="btn btn-primary" onclick="saveDonorProfile()">Save Profile</button>
+                    </div>
+
+                    <div class="card">
+                        <h4>⏱ 90-Day Donation Gap Tracker</h4>
+                        <div class="gap-tracker">
+                            <div class="gap-bar-wrap">
+                                <div class="gap-bar" id="donation-gap-bar"></div>
+                            </div>
+                            <p id="donation-gap-text">Set your last donation date to see eligibility.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB: REQUESTS -->
+                <div class="dash-tab" id="donor-tab-requests">
+                    <div class="dash-header">
+                        <h2>🚨 Active Blood Requests</h2>
+                        <p>Urgent requests matching your blood type near you.</p>
+                    </div>
+                    <div id="donor-requests-list"></div>
+                </div>
+
+                <!-- TAB: HISTORY -->
+                <div class="dash-tab" id="donor-tab-history">
+                    <div class="dash-header">
+                        <h2>📋 Donation History</h2>
+                        <p>Your past donations and accepted requests.</p>
+                    </div>
+                    <div id="donor-history-list"></div>
+                </div>
+
+            </main>
+        </div>
+    </div>
+
+
+    <!-- ============================================================
+       SECTION 4: HOSPITAL DASHBOARD
+  ============================================================ -->
+    <div id="page-hospital" class="page">
+        <div class="dashboard">
+            <aside class="sidebar">
+                <div class="sidebar-brand">🩸 VitalLink</div>
+                <nav class="sidebar-nav">
+                    <a href="#" class="sidebar-link active" onclick="showHospitalTab('create', this)">
+                        <span>➕</span> New Request
+                    </a>
+                    <a href="#" class="sidebar-link" onclick="showHospitalTab('active', this)">
+                        <span>📡</span> Active Requests
+                        <span class="badge" id="hosp-active-badge">2</span>
+                    </a>
+                    <a href="#" class="sidebar-link" onclick="showHospitalTab('matched', this)">
+                        <span>✅</span> Matched Donors
+                    </a>
+                </nav>
+                <div class="sidebar-footer">
+                    <button class="btn btn-ghost btn-sm full-width" onclick="logout()">← Logout</button>
+                </div>
+            </aside>
+
+            <main class="dash-main">
+
+                <!-- TAB: CREATE REQUEST -->
+                <div class="dash-tab active" id="hospital-tab-create">
+                    <div class="dash-header">
+                        <h2>Create Blood Request</h2>
+                        <p>Fill in the details and the system will instantly match eligible donors.</p>
+                    </div>
+                    <div class="card request-form-card">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Patient Name</label>
+                                <input type="text" id="req-patient-name" class="input"
+                                    placeholder="Patient full name" />
+                            </div>
+                            <div class="form-group">
+                                <label>Blood Group Required</label>
+                                <select id="req-blood-group" class="input">
+                                    <option value="A+">A+</option>
+                                    <option value="A-">A-</option>
+                                    <option value="B+">B+</option>
+                                    <option value="B-">B-</option>
+                                    <option value="O+">O+</option>
+                                    <option value="O-">O-</option>
+                                    <option value="AB+">AB+</option>
+                                    <option value="AB-">AB-</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Units Needed</label>
+                                <input type="number" id="req-units" class="input" placeholder="e.g. 2" min="1"
+                                    max="10" />
+                            </div>
+                            <div class="form-group">
+                                <label>Urgency Level</label>
+                                <select id="req-urgency" class="input">
+                                    <option value="critical">🔴 Critical (within 1 hour)</option>
+                                    <option value="urgent">🟡 Urgent (within 6 hours)</option>
+                                    <option value="normal">🟢 Normal (within 24 hours)</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>City / Location</label>
+                                <input type="text" id="req-city" class="input" placeholder="Hospital city" />
+                            </div>
+                            <div class="form-group">
+                                <label>Additional Notes</label>
+                                <input type="text" id="req-notes" class="input"
+                                    placeholder="Any special requirements..." />
+                            </div>
+                        </div>
+                        <button class="btn btn-primary btn-lg" onclick="createBloodRequest()">🚨 Send Blood
+                            Request</button>
+                    </div>
+
+                    <div id="match-results" class="hidden">
+                        <div class="dash-header" style="margin-top:2rem">
+                            <h3>⚡ Matched Donors Found!</h3>
+                            <p>These donors have been notified automatically.</p>
+                        </div>
+                        <div id="matched-donors-list"></div>
+                    </div>
+                </div>
+
+                <!-- TAB: ACTIVE REQUESTS -->
+                <div class="dash-tab" id="hospital-tab-active">
+                    <div class="dash-header">
+                        <h2>📡 Active Requests</h2>
+                        <p>Track the status of all your open blood requests.</p>
+                    </div>
+                    <div id="hospital-requests-list"></div>
+                </div>
+
+                <!-- TAB: MATCHED DONORS -->
+                <div class="dash-tab" id="hospital-tab-matched">
+                    <div class="dash-header">
+                        <h2>✅ Matched Donors</h2>
+                        <p>Donors who have accepted your requests.</p>
+                    </div>
+                    <div id="matched-list"></div>
+                </div>
+
+            </main>
+        </div>
+    </div>
+
+
+    <!-- ============================================================
+       SECTION 5: BLOOD BANK DASHBOARD
+  ============================================================ -->
+    <div id="page-bloodbank" class="page">
+        <div class="dashboard">
+            <aside class="sidebar">
+                <div class="sidebar-brand">🩸 VitalLink</div>
+                <nav class="sidebar-nav">
+                    <a href="#" class="sidebar-link active" onclick="showBankTab('inventory', this)">
+                        <span>📦</span> Inventory
+                    </a>
+                    <a href="#" class="sidebar-link" onclick="showBankTab('update', this)">
+                        <span>✏️</span> Update Stock
+                    </a>
+                    <a href="#" class="sidebar-link" onclick="showBankTab('alerts', this)">
+                        <span>🔔</span> Alerts
+                        <span class="badge alert-badge" id="bank-alert-badge">0</span>
+                    </a>
+                </nav>
+                <div class="sidebar-footer">
+                    <button class="btn btn-ghost btn-sm full-width" onclick="logout()">← Logout</button>
+                </div>
+            </aside>
+
+            <main class="dash-main">
+
+                <!-- TAB: INVENTORY -->
+                <div class="dash-tab active" id="bloodbank-tab-inventory">
+                    <div class="dash-header">
+                        <h2>Blood Inventory Overview</h2>
+                        <p>Current stock levels for all blood groups.</p>
+                    </div>
+                    <div class="inventory-summary" id="inventory-summary"></div>
+                    <div class="card">
+                        <h4>Stock Details</h4>
+                        <div class="table-wrap">
+                            <table class="stock-table" id="stock-table">
+                                <thead>
+                                    <tr>
+                                        <th>Blood Group</th>
+                                        <th>Units Available</th>
+                                        <th>Expiry Date</th>
+                                        <th>Status</th>
+                                        <th>Last Updated</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="stock-table-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB: UPDATE STOCK -->
+                <div class="dash-tab" id="bloodbank-tab-update">
+                    <div class="dash-header">
+                        <h2>✏️ Update Blood Stock</h2>
+                        <p>Add or update units for a specific blood group.</p>
+                    </div>
+                    <div class="card">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Blood Group</label>
+                                <select id="bank-blood-group" class="input">
+                                    <option value="A+">A+</option>
+                                    <option value="A-">A-</option>
+                                    <option value="B+">B+</option>
+                                    <option value="B-">B-</option>
+                                    <option value="O+">O+</option>
+                                    <option value="O-">O-</option>
+                                    <option value="AB+">AB+</option>
+                                    <option value="AB-">AB-</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Units Available</label>
+                                <input type="number" id="bank-units" class="input" placeholder="Enter units" min="0" />
+                            </div>
+                            <div class="form-group">
+                                <label>Expiry Date</label>
+                                <input type="date" id="bank-expiry" class="input" />
+                            </div>
+                            <div class="form-group">
+                                <label>Action</label>
+                                <select id="bank-action" class="input">
+                                    <option value="set">Set exact amount</option>
+                                    <option value="add">Add to existing</option>
+                                    <option value="subtract">Use / Remove units</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button class="btn btn-primary" onclick="updateInventory()">Update Inventory</button>
+                    </div>
+                    <div id="update-log-wrap" class="card hidden">
+                        <h4>📝 Recent Updates</h4>
+                        <ul id="update-log" class="update-log-list"></ul>
+                    </div>
+                </div>
+
+                <!-- TAB: ALERTS -->
+                <div class="dash-tab" id="bloodbank-tab-alerts">
+                    <div class="dash-header">
+                        <h2>🔔 Stock Alerts</h2>
+                        <p>Blood groups that need immediate restocking.</p>
+                    </div>
+                    <div id="alerts-list"></div>
+                </div>
+
+            </main>
+        </div>
+    </div>
+
+
+    <!-- ============================================================
+       MODALS: Login & Register
+  ============================================================ -->
+    <div class="modal-overlay" id="modal-overlay" onclick="closeModal()"></div>
+
+    <!-- LOGIN MODAL -->
+    <div class="modal" id="modal-login">
+        <button class="modal-close" onclick="closeModal()">✕</button>
+        <div class="modal-header">
+            <h3>Welcome back</h3>
+            <p>Sign in to your VitalLink account</p>
+        </div>
+        <div class="role-tabs">
+            <button class="role-tab active" onclick="setLoginRole('donor', this)">🧑 Donor</button>
+            <button class="role-tab" onclick="setLoginRole('hospital', this)">🏥 Hospital</button>
+            <button class="role-tab" onclick="setLoginRole('bloodbank', this)">🏦 Blood Bank</button>
+        </div>
+        <input type="hidden" id="login-role" value="donor" />
+        <div class="form-group">
+            <label>Email</label>
+            <input type="email" id="login-email" class="input" placeholder="you@email.com" />
+        </div>
+        <div class="form-group">
+            <label>Password</label>
+            <input type="password" id="login-password" class="input" placeholder="••••••••" />
+        </div>
+        <p class="error-msg hidden" id="login-error">Invalid email or password.</p>
+        <button class="btn btn-primary full-width" onclick="login()">Sign In</button>
+        <p class="modal-switch">
+            No account? <a href="#" onclick="openModal('register')">Create one free →</a>
+        </p>
+    </div>
+
+    <!-- REGISTER MODAL -->
+    <div class="modal" id="modal-register">
+        <button class="modal-close" onclick="closeModal()">✕</button>
+        <div class="modal-header">
+            <h3>Create Account</h3>
+            <p>Join VitalLink and start saving lives</p>
+        </div>
+        <div class="role-tabs">
+            <button class="role-tab active" id="reg-tab-donor" onclick="setRegisterRole('donor', this)">🧑
+                Donor</button>
+            <button class="role-tab" id="reg-tab-hospital" onclick="setRegisterRole('hospital', this)">🏥
+                Hospital</button>
+            <button class="role-tab" id="reg-tab-bloodbank" onclick="setRegisterRole('bloodbank', this)">🏦 Blood
+                Bank</button>
+        </div>
+        <input type="hidden" id="register-role" value="donor" />
+        <div class="form-group">
+            <label>Full Name / Organization Name</label>
+            <input type="text" id="reg-name" class="input" placeholder="Your name" />
+        </div>
+        <div class="form-group">
+            <label>Email</label>
+            <input type="email" id="reg-email" class="input" placeholder="you@email.com" />
+        </div>
+        <div class="form-group">
+            <label>City</label>
+            <input type="text" id="reg-city" class="input" placeholder="Your city" />
+        </div>
+        <div class="form-group" id="reg-blood-group-wrap">
+            <label>Blood Group</label>
+            <select id="reg-blood-group" class="input">
+                <option value="A+">A+</option>
+                <option value="A-">A-</option>
+                <option value="B+">B+</option>
+                <option value="B-">B-</option>
+                <option value="O+">O+</option>
+                <option value="O-">O-</option>
+                <option value="AB+">AB+</option>
+                <option value="AB-">AB-</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Password</label>
+            <input type="password" id="reg-password" class="input" placeholder="Choose a password" />
+        </div>
+        <p class="error-msg hidden" id="register-error">Please fill all fields.</p>
+        <button class="btn btn-primary full-width" onclick="register()">Create Account</button>
+        <p class="modal-switch">
+            Already registered? <a href="#" onclick="openModal('login')">Sign in →</a>
+        </p>
+    </div>
+
+    <!-- Toast notification -->
+    <div class="toast" id="toast"></div>
+
+    <!-- Load JS last -->
+    <script src="hk.js"></script>
+</body>
+
+</html>
