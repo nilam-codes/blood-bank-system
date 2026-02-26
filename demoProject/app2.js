@@ -161,10 +161,10 @@ AuthManager.prototype.login = async function (role, email, password) {
 
         if (!response.ok) {
             console.error("Login failed:", data.error);
+            alert("Login Failed: " + (data.error || "Invalid credentials"));
             return false;
         }
 
-        // Verify role matches if needed (or just use role from backend)
         const session = {
             role: data.role,
             name: data.name,
@@ -178,9 +178,20 @@ AuthManager.prototype.login = async function (role, email, password) {
         return true;
     } catch (error) {
         console.error("Connection error:", error);
+        alert("Server Connectivity Error: Unable to reach the backend at " + API_BASE_URL + ". Please ensure your Flask server (app.py) is running.");
         return false;
     }
 };
+
+AuthManager.prototype.checkServer = async function () {
+    try {
+        const response = await fetch(`${API_BASE_URL}/analytics/dashboard`, { method: "GET" });
+        return response.ok;
+    } catch (e) {
+        return false;
+    }
+};
+
 
 
 AuthManager.prototype.logout = function () {
@@ -221,7 +232,7 @@ function LoginPage(auth) {
     this.errorMsg = document.getElementById("loginError");
 }
 
-LoginPage.prototype.init = function () {
+LoginPage.prototype.init = async function () {
     if (!this.formPanel) { return; }
     var i;
     for (i = 0; i < this.roleCards.length; i++) {
@@ -229,9 +240,36 @@ LoginPage.prototype.init = function () {
     }
     this.loginBtn.addEventListener("click", this.handleLogin.bind(this));
     this.passInput.addEventListener("keydown", this.handleEnterKey.bind(this));
+
+    // Check server status
+    var isOnline = await this.auth.checkServer();
+    this.updateServerStatus(isOnline);
+
     var session = this.auth.getSession();
     if (session) { this.redirectByRole(session.role); }
 };
+
+LoginPage.prototype.updateServerStatus = function (isOnline) {
+    var el = document.getElementById("serverStatusId");
+    if (!el) {
+        el = document.createElement("div");
+        el.id = "serverStatusId";
+        el.style.position = "fixed";
+        el.style.bottom = "20px";
+        el.style.right = "20px";
+        el.style.padding = "8px 16px";
+        el.style.borderRadius = "20px";
+        el.style.fontSize = "12px";
+        el.style.fontWeight = "600";
+        el.style.zIndex = "999";
+        document.body.appendChild(el);
+    }
+    el.textContent = isOnline ? "● BACKEND ONLINE" : "● BACKEND OFFLINE";
+    el.style.background = isOnline ? "rgba(34, 197, 94, 0.2)" : "rgba(239, 68, 68, 0.2)";
+    el.style.color = isOnline ? "#4ade80" : "#f87171";
+    el.style.border = isOnline ? "1px solid rgba(34, 197, 94, 0.3)" : "1px solid rgba(239, 68, 68, 0.3)";
+};
+
 
 LoginPage.prototype.handleRoleClick = function (event) {
     var card = event.currentTarget;
@@ -910,23 +948,30 @@ StudentDash.prototype.renderTrendChart = function () {
     charts.renderTrendChart();
 };
 
-StudentDash.prototype.renderTrendTable = function () {
+StudentDash.prototype.renderTrendTable = async function () {
     var el = document.getElementById("trendTableBody");
     if (!el) { return; }
-    var data = MOCK.trendData, i, d, badgeClass, html;
-    html = "";
-    for (i = 0; i < data.length; i++) {
-        d = data[i];
-        badgeClass = d.attendance_percentage >= 85 ? "badge-safe" : (d.attendance_percentage >= 75 ? "badge-warning" : "badge-critical");
-        html += '<tr>'
-            + '<td class="td-name">' + d.month + ' 2024</td>'
-            + '<td class="td-mono">' + d.attendance_percentage + '%</td>'
-            + '<td><div class="progress-wrap" style="min-width:100px"><div class="progress-bar blue" style="width:' + d.attendance_percentage + '%"></div></div></td>'
-            + '<td><span class="badge ' + badgeClass + '">' + (d.attendance_percentage >= 85 ? "Good" : d.attendance_percentage >= 75 ? "Warning" : "Low") + '</span></td>'
-            + '</tr>';
+    try {
+        const response = await fetch(`${API_BASE_URL}/analytics/trend`);
+        const data = await response.json();
+
+        var html = "", i, d, badgeClass;
+        for (i = 0; i < data.length; i++) {
+            d = data[i];
+            badgeClass = d.attendance_percentage >= 85 ? "badge-safe" : (d.attendance_percentage >= 75 ? "badge-warning" : "badge-critical");
+            html += '<tr>'
+                + '<td class="td-name">' + d.month + '</td>'
+                + '<td class="td-mono">' + d.attendance_percentage + '%</td>'
+                + '<td><div class="progress-wrap" style="min-width:100px"><div class="progress-bar blue" style="width:' + d.attendance_percentage + '%"></div></div></td>'
+                + '<td><span class="badge ' + badgeClass + '">' + (d.attendance_percentage >= 85 ? "Good" : d.attendance_percentage >= 75 ? "Warning" : "Low") + '</span></td>'
+                + '</tr>';
+        }
+        el.innerHTML = html || '<tr><td colspan="4" style="text-align:center;padding:24px;color:#94a3b8;">No trend data available.</td></tr>';
+    } catch (e) {
+        console.error("Failed to render student trend table:", e);
     }
-    el.innerHTML = html;
 };
+
 
 StudentDash.prototype.updateRiskCalculator = function () {
     /* Can miss = (total classes * 0.25) - absences already taken */
@@ -1036,63 +1081,68 @@ var APP_MARKER = null;
    BOOTSTRAPPER
    ============================================================ */
 (function boot() {
-    var auth = new AuthManager();
-    var page = document.body ? document.body.getAttribute("data-page") : null;
+    try {
+        var auth = new AuthManager();
+        var page = document.body ? document.body.getAttribute("data-page") : null;
 
-    if (page === "login") {
-        var loginPage = new LoginPage(auth);
-        loginPage.init();
-        return;
+        if (page === "login") {
+            var loginPage = new LoginPage(auth);
+            loginPage.init();
+            return;
+        }
+
+        if (page === "student") {
+            var sessionSt = auth.requireRole("student");
+            if (!sessionSt) { return; }
+            var sidebarSt = new SidebarController(sessionSt, auth);
+            sidebarSt.init();
+            var navSt = new SidebarNav({
+                "my-attendance": "My Attendance",
+                "subjects": "Subject-wise Breakdown",
+                "trend": "Attendance Trend & Analysis",
+                "risk": "Risk Status"
+            });
+            navSt.init();
+            var dashSt = new StudentDash(sessionSt);
+            dashSt.init();
+            return;
+        }
+
+        if (page === "staff") {
+            var sessionSf = auth.requireRole("staff");
+            if (!sessionSf) { return; }
+            var sidebarSf = new SidebarController(sessionSf, auth);
+            sidebarSf.init();
+            var navSf = new SidebarNav({
+                "mark": "Mark Attendance",
+                "history": "Session History",
+                "students": "My Students",
+                "subjects-list": "My Subjects"
+            });
+            navSf.init();
+            var marker = new AttendanceMarker();
+            APP_MARKER = marker;
+            marker.init();
+            var staffSec = new StaffSections();
+            staffSec.init();
+            return;
+        }
+
+        if (page === "admin") {
+            var sessionAd = auth.requireRole("admin");
+            if (!sessionAd) { return; }
+            var sidebarAd = new SidebarController(sessionAd, auth);
+            sidebarAd.init();
+            var adminDash = new AdminDash(sessionAd);
+            adminDash.init();
+            return;
+        }
+
+        /* Fallback — treat as login */
+        var fb = new LoginPage(auth);
+        fb.init();
+    } catch (e) {
+        console.error("FATAL: App failed to initialize:", e);
+        alert("Fatal Error: The application failed to initialize. " + e.message);
     }
-
-    if (page === "student") {
-        var sessionSt = auth.requireRole("student");
-        if (!sessionSt) { return; }
-        var sidebarSt = new SidebarController(sessionSt, auth);
-        sidebarSt.init();
-        var navSt = new SidebarNav({
-            "my-attendance": "My Attendance",
-            "subjects": "Subject-wise Breakdown",
-            "trend": "Attendance Trend & Analysis",
-            "risk": "Risk Status"
-        });
-        navSt.init();
-        var dashSt = new StudentDash(sessionSt);
-        dashSt.init();
-        return;
-    }
-
-    if (page === "staff") {
-        var sessionSf = auth.requireRole("staff");
-        if (!sessionSf) { return; }
-        var sidebarSf = new SidebarController(sessionSf, auth);
-        sidebarSf.init();
-        var navSf = new SidebarNav({
-            "mark": "Mark Attendance",
-            "history": "Session History",
-            "students": "My Students",
-            "subjects-list": "My Subjects"
-        });
-        navSf.init();
-        var marker = new AttendanceMarker();
-        APP_MARKER = marker;
-        marker.init();
-        var staffSec = new StaffSections();
-        staffSec.init();
-        return;
-    }
-
-    if (page === "admin") {
-        var sessionAd = auth.requireRole("admin");
-        if (!sessionAd) { return; }
-        var sidebarAd = new SidebarController(sessionAd, auth);
-        sidebarAd.init();
-        var adminDash = new AdminDash(sessionAd);
-        adminDash.init();
-        return;
-    }
-
-    /* Fallback — treat as login */
-    var fb = new LoginPage(auth);
-    fb.init();
 }());
