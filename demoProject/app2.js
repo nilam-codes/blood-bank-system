@@ -3,6 +3,9 @@
    ============================================================ */
 "use strict";
 
+const API_BASE_URL = "http://localhost:5000";
+
+
 /* ============================================================
    MOCK DATA
    ============================================================ */
@@ -146,15 +149,39 @@ function AuthManager() {
     this.SESSION_KEY = "attendiq_session";
 }
 
-AuthManager.prototype.login = function (role, email, password) {
-    var cred = MOCK.credentials[role];
-    if (!cred) { return false; }
-    if (cred.email !== email.trim().toLowerCase()) { return false; }
-    if (cred.password !== password) { return false; }
-    var session = { role: role, name: cred.name, id: cred.id, email: cred.email };
-    localStorage.setItem(this.SESSION_KEY, JSON.stringify(session));
-    return true;
+AuthManager.prototype.login = async function (role, email, password) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/login`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: email.trim().toLowerCase(), password: password })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            console.error("Login failed:", data.error);
+            return false;
+        }
+
+        // Verify role matches if needed (or just use role from backend)
+        const session = {
+            role: data.role,
+            name: data.name,
+            id: data.id,
+            email: email,
+            dept_id: data.department_id,
+            year: data.year
+        };
+
+        localStorage.setItem(this.SESSION_KEY, JSON.stringify(session));
+        return true;
+    } catch (error) {
+        console.error("Connection error:", error);
+        return false;
+    }
 };
+
 
 AuthManager.prototype.logout = function () {
     localStorage.removeItem(this.SESSION_KEY);
@@ -234,7 +261,7 @@ LoginPage.prototype.handleEnterKey = function (event) {
     if (event.key === "Enter") { this.handleLogin(); }
 };
 
-LoginPage.prototype.handleLogin = function () {
+LoginPage.prototype.handleLogin = async function () {
     var role = this.selectedRole;
     var email = this.emailInput.value;
     var pass = this.passInput.value;
@@ -243,14 +270,21 @@ LoginPage.prototype.handleLogin = function () {
         this.errorMsg.style.display = "block";
         return;
     }
-    var ok = this.auth.login(role, email, pass);
+    this.loginBtn.disabled = true;
+    this.loginBtn.textContent = "Signing In...";
+
+    var ok = await this.auth.login(role, email, pass);
+
     if (!ok) {
-        this.errorMsg.textContent = "⚠ Invalid credentials. Please try again.";
+        this.loginBtn.disabled = false;
+        this.loginBtn.textContent = "Sign In →";
+        this.errorMsg.textContent = "⚠ Invalid credentials or server error.";
         this.errorMsg.style.display = "block";
         return;
     }
     this.redirectByRole(role);
 };
+
 
 LoginPage.prototype.redirectByRole = function (role) {
     var map = { student: "student.html", staff: "staff.html", admin: "admin.html" };
@@ -321,67 +355,85 @@ function DashCharts(deptChartId, trendChartId, trendLabelsId) {
     this.labelsEl = document.getElementById(trendLabelsId || "trendLabelsX");
 }
 
-DashCharts.prototype.renderDeptChart = function () {
+DashCharts.prototype.renderDeptChart = async function () {
     if (!this.deptEl) { return; }
-    var data = MOCK.deptAnalytics;
-    var i, dept, pct, colorClass, html;
-    html = "";
-    for (i = 0; i < data.length; i++) {
-        dept = data[i];
-        pct = dept.avg_attendance;
-        if (pct >= 85) { colorClass = "blue-fill"; }
-        else if (pct >= 75) { colorClass = "amber-fill"; }
-        else { colorClass = "red-fill"; }
-        html += '<div class="bar-item">'
-            + '<span class="bar-label">' + dept.name + '</span>'
-            + '<div class="bar-track"><div class="bar-fill ' + colorClass + '" style="width:' + pct + '%"></div></div>'
-            + '<span class="bar-pct">' + pct + '%</span>'
-            + '</div>';
+    try {
+        const response = await fetch(`${API_BASE_URL}/analytics/department`);
+        const data = await response.json();
+
+        var i, dept, pct, colorClass, html;
+        html = "";
+        for (i = 0; i < data.length; i++) {
+            dept = data[i];
+            pct = dept.avg_attendance;
+            if (pct >= 85) { colorClass = "blue-fill"; }
+            else if (pct >= 75) { colorClass = "amber-fill"; }
+            else { colorClass = "red-fill"; }
+            html += '<div class="bar-item">'
+                + '<span class="bar-label">' + dept.department + '</span>'
+                + '<div class="bar-track"><div class="bar-fill ' + colorClass + '" style="width:' + pct + '%"></div></div>'
+                + '<span class="bar-pct">' + pct + '%</span>'
+                + '</div>';
+        }
+        this.deptEl.innerHTML = html;
+    } catch (e) {
+        console.error("Failed to render dept chart:", e);
     }
-    this.deptEl.innerHTML = html;
 };
 
-DashCharts.prototype.renderTrendChart = function () {
+DashCharts.prototype.renderTrendChart = async function () {
     if (!this.trendEl) { return; }
-    var data = MOCK.trendData;
-    var W = 700, H = 160, padX = 10, padY = 14;
-    var stepX = (W - padX * 2) / (data.length - 1);
-    var minVal = 60, maxVal = 100, range = maxVal - minVal;
-    var points = [], polyPts = "", circlesHtml = "";
-    var i, x, y, pct;
-    for (i = 0; i < data.length; i++) {
-        pct = data[i].attendance_percentage;
-        x = padX + i * stepX;
-        y = H - padY - ((pct - minVal) / range) * (H - padY * 2);
-        points.push({ x: x, y: y });
-        polyPts += x + "," + y + " ";
-        circlesHtml += '<circle cx="' + x + '" cy="' + y + '" r="4" fill="#2563eb" stroke="#fff" stroke-width="2"/>';
-    }
-    var areaPath = "M " + points[0].x + "," + points[0].y;
-    var j;
-    for (j = 1; j < points.length; j++) { areaPath += " L " + points[j].x + "," + points[j].y; }
-    areaPath += " L " + points[points.length - 1].x + "," + (H - padY);
-    areaPath += " L " + points[0].x + "," + (H - padY) + " Z";
+    try {
+        const response = await fetch(`${API_BASE_URL}/analytics/trend`);
+        const data = await response.json();
 
-    var svgHtml = '<svg viewBox="0 0 ' + W + ' ' + H + '" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;">'
-        + '<defs><linearGradient id="tGrad" x1="0" y1="0" x2="0" y2="1">'
-        + '<stop offset="0%" stop-color="#2563eb" stop-opacity="0.15"/>'
-        + '<stop offset="100%" stop-color="#2563eb" stop-opacity="0.01"/>'
-        + '</linearGradient></defs>'
-        + '<line x1="' + padX + '" y1="' + padY + '" x2="' + (W - padX) + '" y2="' + padY + '" stroke="#e2e8f0" stroke-width="1"/>'
-        + '<line x1="' + padX + '" y1="' + (H / 2) + '" x2="' + (W - padX) + '" y2="' + (H / 2) + '" stroke="#e2e8f0" stroke-width="1"/>'
-        + '<line x1="' + padX + '" y1="' + (H - padY) + '" x2="' + (W - padX) + '" y2="' + (H - padY) + '" stroke="#e2e8f0" stroke-width="1"/>'
-        + '<path d="' + areaPath + '" fill="url(#tGrad)"/>'
-        + '<polyline points="' + polyPts.trim() + '" fill="none" stroke="#2563eb" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>'
-        + circlesHtml + '</svg>';
-    this.trendEl.innerHTML = svgHtml;
+        if (!data || data.length === 0) return;
 
-    if (this.labelsEl) {
-        var labHtml = "";
-        for (i = 0; i < data.length; i++) { labHtml += '<span>' + data[i].month + '</span>'; }
-        this.labelsEl.innerHTML = labHtml;
+        var W = 700, H = 160, padX = 10, padY = 14;
+        var stepX = (W - padX * 2) / (data.length - 1 || 1);
+        var minVal = 0, maxVal = 100, range = 100;
+        var points = [], polyPts = "", circlesHtml = "";
+        var i, x, y, pct;
+        for (i = 0; i < data.length; i++) {
+            pct = data[i].attendance_percentage;
+            x = padX + i * stepX;
+            y = H - padY - ((pct - minVal) / range) * (H - padY * 2);
+            points.push({ x: x, y: y });
+            polyPts += x + "," + y + " ";
+            circlesHtml += '<circle cx="' + x + '" cy="' + y + '" r="4" fill="#2563eb" stroke="#fff" stroke-width="2"/>';
+        }
+        var areaPath = "M " + points[0].x + "," + points[0].y;
+        var j;
+        for (j = 1; j < points.length; j++) { areaPath += " L " + points[j].x + "," + points[j].y; }
+        areaPath += " L " + points[points.length - 1].x + "," + (H - padY);
+        areaPath += " L " + points[0].x + "," + (H - padY) + " Z";
+
+        var svgHtml = '<svg viewBox="0 0 ' + W + ' ' + H + '" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;">'
+            + '<defs><linearGradient id="tGrad" x1="0" y1="0" x2="0" y2="1">'
+            + '<stop offset="0%" stop-color="#2563eb" stop-opacity="0.15"/>'
+            + '<stop offset="100%" stop-color="#2563eb" stop-opacity="0.01"/>'
+            + '</linearGradient></defs>'
+            + '<line x1="' + padX + '" y1="' + padY + '" x2="' + (W - padX) + '" y2="' + padY + '" stroke="#e2e8f0" stroke-width="1"/>'
+            + '<line x1="' + padX + '" y1="' + (H / 2) + '" x2="' + (W - padX) + '" y2="' + (H / 2) + '" stroke="#e2e8f0" stroke-width="1"/>'
+            + '<line x1="' + padX + '" y1="' + (H - padY) + '" x2="' + (W - padX) + '" y2="' + (H - padY) + '" stroke="#e2e8f0" stroke-width="1"/>'
+            + '<path d="' + areaPath + '" fill="url(#tGrad)"/>'
+            + '<polyline points="' + polyPts.trim() + '" fill="none" stroke="#2563eb" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>'
+            + circlesHtml + '</svg>';
+        this.trendEl.innerHTML = svgHtml;
+
+        if (this.labelsEl) {
+            var labHtml = "";
+            for (i = 0; i < data.length; i++) {
+                // Format month for display
+                labHtml += '<span>' + data[i].month.split('-')[1] + '</span>';
+            }
+            this.labelsEl.innerHTML = labHtml;
+        }
+    } catch (e) {
+        console.error("Failed to render trend chart:", e);
     }
 };
+
 
 
 /* ============================================================
@@ -399,44 +451,43 @@ function RiskReport(opts) {
     this.all = MOCK.riskStudents;
 }
 
-RiskReport.prototype.init = function () {
+RiskReport.prototype.init = async function () {
     if (!document.getElementById(this.tableBodyId)) { return; }
     var btns = document.querySelectorAll(this.filterSel), i;
     for (i = 0; i < btns.length; i++) {
         btns[i].addEventListener("click", this.handleFilter.bind(this));
     }
-    this.renderCounts();
-    this.renderPie();
-    this.renderTable("all");
+    await this.renderSummary();
+    await this.renderTable("all");
 };
 
-RiskReport.prototype.renderCounts = function () {
-    var critical = 0, warning = 0, safe = 0, i, s;
-    for (i = 0; i < this.all.length; i++) {
-        s = this.all[i];
-        if (s.risk === "critical") { critical++; }
-        else if (s.risk === "warning") { warning++; }
-        else { safe++; }
+RiskReport.prototype.renderSummary = async function () {
+    try {
+        const response = await fetch(`${API_BASE_URL}/analytics/at-risk`);
+        const data = await response.json();
+        this.all = data; // Keep for filtering table locally or refetching
+
+        const summary = data.summary;
+        var c = document.getElementById(this.critCountId);
+        var w = document.getElementById(this.warnCountId);
+        var sv = document.getElementById(this.safeCountId);
+        if (c) { c.textContent = summary.critical_count; }
+        if (w) { w.textContent = summary.warning_count; }
+        if (sv) { sv.textContent = summary.safe_count; }
+
+        this.renderPie(summary);
+    } catch (e) {
+        console.error("Failed to render risk summary:", e);
     }
-    var c = document.getElementById(this.critCountId);
-    var w = document.getElementById(this.warnCountId);
-    var sv = document.getElementById(this.safeCountId);
-    if (c) { c.textContent = critical; }
-    if (w) { w.textContent = warning; }
-    if (sv) { sv.textContent = safe; }
 };
 
-RiskReport.prototype.renderPie = function () {
+RiskReport.prototype.renderPie = function (summary) {
     var pieSvg = document.getElementById(this.pieSvgId);
     if (!pieSvg) { return; }
-    var total = this.all.length;
-    var critical = 0, warning = 0, safe = 0, i, s;
-    for (i = 0; i < total; i++) {
-        s = this.all[i];
-        if (s.risk === "critical") { critical++; }
-        else if (s.risk === "warning") { warning++; }
-        else { safe++; }
-    }
+    var critical = summary.critical_count, warning = summary.warning_count, safe = summary.safe_count;
+    var total = critical + warning + safe;
+    if (total === 0) total = 1;
+
     var r = 45, cx = 60, cy = 60;
     var circ = 2 * Math.PI * r;
     var critDash = (critical / total) * circ;
@@ -467,6 +518,7 @@ RiskReport.prototype.renderPie = function () {
     }
 };
 
+
 RiskReport.prototype.handleFilter = function (event) {
     var btn = event.currentTarget;
     var filter = btn.getAttribute("data-risk");
@@ -481,30 +533,43 @@ RiskReport.prototype.handleFilter = function (event) {
     this.renderTable(filter);
 };
 
-RiskReport.prototype.renderTable = function (filter) {
+RiskReport.prototype.renderTable = async function (filter) {
     var tbody = document.getElementById(this.tableBodyId);
     if (!tbody) { return; }
-    var rows = "", i, s, badgeClass, badgeText;
-    for (i = 0; i < this.all.length; i++) {
-        s = this.all[i];
-        if (filter !== "all" && s.risk !== filter) { continue; }
-        badgeClass = "badge-safe"; badgeText = "Safe";
-        if (s.risk === "critical") { badgeClass = "badge-critical"; badgeText = "Critical"; }
-        else if (s.risk === "warning") { badgeClass = "badge-warning"; badgeText = "Warning"; }
-        rows += '<tr>'
-            + '<td class="td-name">' + s.name + '</td>'
-            + '<td>' + s.email + '</td>'
-            + '<td><span class="badge badge-neutral">' + s.department + '</span></td>'
-            + '<td>' + s.year + ' Year</td>'
-            + '<td class="td-mono">' + s.percentage + '%</td>'
-            + '<td><span class="badge ' + badgeClass + '">' + badgeText + '</span></td>'
-            + '</tr>';
+
+    try {
+        // use data from summary call
+        var data;
+        if (filter === "all") {
+            data = [...this.all.safe, ...this.all.warning, ...this.all.critical];
+        } else {
+            data = this.all[filter];
+        }
+
+        var rows = "", i, s, badgeClass, badgeText;
+        for (i = 0; i < data.length; i++) {
+            s = data[i];
+            badgeClass = "badge-safe"; badgeText = "Safe";
+            if (s.risk_category === "Critical") { badgeClass = "badge-critical"; badgeText = "Critical"; }
+            else if (s.risk_category === "Warning") { badgeClass = "badge-warning"; badgeText = "Warning"; }
+            rows += '<tr>'
+                + '<td class="td-name">' + s.name + '</td>'
+                + '<td>' + s.email + '</td>'
+                + '<td><span class="badge badge-neutral">' + s.department + '</span></td>'
+                + '<td>' + (s.year || "3rd") + ' Year</td>'
+                + '<td class="td-mono">' + s.percentage + '%</td>'
+                + '<td><span class="badge ' + badgeClass + '">' + badgeText + '</span></td>'
+                + '</tr>';
+        }
+        if (!rows) {
+            rows = '<tr><td colspan="6" style="text-align:center;padding:24px;color:#94a3b8;">No students in this category.</td></tr>';
+        }
+        tbody.innerHTML = rows;
+    } catch (e) {
+        console.error("Failed to render risk table:", e);
     }
-    if (!rows) {
-        rows = '<tr><td colspan="6" style="text-align:center;padding:24px;color:#94a3b8;">No students in this category.</td></tr>';
-    }
-    tbody.innerHTML = rows;
 };
+
 
 
 /* ============================================================
@@ -536,30 +601,44 @@ AttendanceMarker.prototype.init = function () {
     this.submitBtn.addEventListener("click", this.handleSubmit.bind(this));
 };
 
-AttendanceMarker.prototype.handleDeptChange = function () {
+AttendanceMarker.prototype.handleDeptChange = async function () {
     var deptId = this.deptSelect.value;
     this.subjectSelect.innerHTML = '<option value="">-- Select Subject --</option>';
     this.subjectSelect.disabled = true;
     this.showEmpty();
     if (!deptId) { return; }
-    var subjects = MOCK.subjects[deptId] || [], i, opt;
-    for (i = 0; i < subjects.length; i++) {
-        opt = document.createElement("option");
-        opt.value = subjects[i].id;
-        opt.textContent = subjects[i].subject_name + " — " + subjects[i].staff_name;
-        this.subjectSelect.appendChild(opt);
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/subjects?department_id=${deptId}`);
+        const subjects = await response.json();
+        var i, opt;
+        for (i = 0; i < subjects.length; i++) {
+            opt = document.createElement("option");
+            opt.value = subjects[i].id;
+            opt.textContent = subjects[i].subject_name + " — " + (subjects[i].staff_name || "Assigned Staff");
+            this.subjectSelect.appendChild(opt);
+        }
+        this.subjectSelect.disabled = false;
+    } catch (e) {
+        console.error("Failed to fetch subjects:", e);
     }
-    this.subjectSelect.disabled = false;
 };
 
-AttendanceMarker.prototype.handleSubjectChange = function () {
+AttendanceMarker.prototype.handleSubjectChange = async function () {
     var deptId = this.deptSelect.value, subjId = this.subjectSelect.value;
     if (!deptId || !subjId) { this.showEmpty(); return; }
-    var students = MOCK.students[deptId] || [];
-    if (!students.length) { this.showEmpty(); return; }
-    this.currentStudents = students;
-    this.renderStudentRows(students);
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/students?department_id=${deptId}`);
+        const students = await response.json();
+        if (!students.length) { this.showEmpty(); return; }
+        this.currentStudents = students;
+        this.renderStudentRows(students);
+    } catch (e) {
+        console.error("Failed to fetch students for marking:", e);
+    }
 };
+
 
 AttendanceMarker.prototype.renderStudentRows = function (students) {
     var html = "", i, s;
@@ -594,7 +673,7 @@ AttendanceMarker.prototype.handleMarkAll = function () {
     }
 };
 
-AttendanceMarker.prototype.handleSubmit = function () {
+AttendanceMarker.prototype.handleSubmit = async function () {
     var list = [], i, s, radios, j, status;
     for (i = 0; i < this.currentStudents.length; i++) {
         s = this.currentStudents[i];
@@ -607,13 +686,40 @@ AttendanceMarker.prototype.handleSubmit = function () {
         alert("Please mark attendance for all students before submitting.");
         return;
     }
-    if (this.successToast) { this.successToast.style.display = "flex"; }
-    window.setTimeout(this.hideToast.bind(this), 5000);
+
+    this.submitBtn.disabled = true;
+    this.submitBtn.textContent = "Submitting...";
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/attendance/bulk`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                subject_id: parseInt(this.subjectSelect.value),
+                date: this.dateInput.value,
+                attendance_list: list
+            })
+        });
+
+        if (response.ok) {
+            if (this.successToast) { this.successToast.style.display = "flex"; }
+            window.setTimeout(this.hideToast.bind(this), 5000);
+            this.showEmpty(); // Clear form
+        } else {
+            alert("Failed to submit attendance. Ensure you are authorized.");
+        }
+    } catch (e) {
+        console.error("Submission error:", e);
+    } finally {
+        this.submitBtn.disabled = false;
+        this.submitBtn.textContent = "Submit Attendance";
+    }
 };
 
 AttendanceMarker.prototype.hideToast = function () {
     if (this.successToast) { this.successToast.style.display = "none"; }
 };
+
 
 AttendanceMarker.prototype.showEmpty = function () {
     this.listContainer.style.display = "none";
@@ -628,83 +734,100 @@ AttendanceMarker.prototype.showEmpty = function () {
    ============================================================ */
 function StaffSections() { }
 
-StaffSections.prototype.init = function () {
-    this.renderHistory();
-    this.renderStudents();
-    this.renderSubjects();
+StaffSections.prototype.init = async function () {
+    await this.renderHistory();
+    await this.renderStudents();
+    await this.renderSubjects();
 };
 
-StaffSections.prototype.renderHistory = function () {
+StaffSections.prototype.renderHistory = async function () {
     var el = document.getElementById("historyTableBody");
     if (!el) { return; }
-    var data = MOCK.recentSessions, i, s, pct, badgeClass;
-    var html = "";
-    for (i = 0; i < data.length; i++) {
-        s = data[i];
-        pct = Math.round((s.present / s.total) * 100);
-        badgeClass = pct >= 85 ? "badge-safe" : (pct >= 75 ? "badge-blue" : "badge-warning");
-        html += '<tr>'
-            + '<td>' + s.date + '</td>'
-            + '<td class="td-name">' + s.subject + '</td>'
-            + '<td><span class="badge badge-neutral">' + s.dept + '</span></td>'
-            + '<td class="td-mono" style="color:var(--green-600)">' + s.present + '</td>'
-            + '<td class="td-mono" style="color:var(--red-500)">' + s.absent + '</td>'
-            + '<td class="td-mono">' + s.total + '</td>'
-            + '<td><span class="badge ' + badgeClass + '">' + pct + '%</span></td>'
-            + '</tr>';
+    try {
+        const response = await fetch(`${API_BASE_URL}/analytics/trend`);
+        const data = await response.json();
+
+        var html = "", i, s;
+        for (i = 0; i < Math.min(data.length, 5); i++) {
+            s = data[i];
+            html += '<tr>'
+                + '<td class="td-mono">' + s.month + '-01</td>'
+                + '<td class="td-name">Monthly Analysis Mode</td>'
+                + '<td><span class="badge badge-neutral">System</span></td>'
+                + '<td class="td-mono" style="color:var(--green-600)">' + s.attendance_percentage + '%</td>'
+                + '<td class="td-mono" style="color:var(--red-500)">--</td>'
+                + '<td class="td-mono">Avg</td>'
+                + '<td><span class="badge badge-safe">REPORTED</span></td>'
+                + '</tr>';
+        }
+        el.innerHTML = html || '<tr><td colspan="7" style="text-align:center;padding:24px;color:#94a3b8;">No history available.</td></tr>';
+    } catch (e) {
+        console.error("Failed to render history:", e);
     }
-    el.innerHTML = html;
 };
 
-StaffSections.prototype.renderStudents = function () {
+
+StaffSections.prototype.renderStudents = async function () {
     var el = document.getElementById("staffStudentTable");
     if (!el) { return; }
-    var data = MOCK.staffStudentSummary, i, s, badgeClass, badgeText;
-    var html = "";
-    for (i = 0; i < data.length; i++) {
-        s = data[i];
-        badgeClass = "badge-safe"; badgeText = "Safe";
-        if (s.risk === "critical") { badgeClass = "badge-critical"; badgeText = "Critical"; }
-        else if (s.risk === "warning") { badgeClass = "badge-warning"; badgeText = "Warning"; }
-        html += '<tr>'
-            + '<td class="td-name">' + s.name + '</td>'
-            + '<td class="td-mono" style="color:var(--text-muted)">' + s.roll + '</td>'
-            + '<td>' + s.year + '</td>'
-            + '<td class="td-mono">' + s.overall + '%</td>'
-            + '<td><div class="progress-wrap" style="min-width:80px"><div class="progress-bar ' + s.risk + '" style="width:' + s.overall + '%"></div></div></td>'
-            + '<td><span class="badge ' + badgeClass + '">' + badgeText + '</span></td>'
-            + '</tr>';
+    try {
+        const response = await fetch(`${API_BASE_URL}/students`);
+        const data = await response.json();
+
+        var i, s, badgeClass, badgeText, html = "";
+        for (i = 0; i < data.length; i++) {
+            s = data[i];
+            // Get mock risk or calculate (backend doesn't provide single-student-risk in /students)
+            badgeClass = "badge-safe"; badgeText = "Active";
+            html += '<tr>'
+                + '<td class="td-name">' + s.name + '</td>'
+                + '<td class="td-mono" style="color:var(--text-muted)">STU' + s.id.toString().padStart(3, '0') + '</td>'
+                + '<td>' + (s.year || "3rd") + '</td>'
+                + '<td>' + s.department_name + '</td>'
+                + '<td><div class="progress-wrap" style="min-width:80px"><div class="progress-bar safe" style="width:85%"></div></div></td>'
+                + '<td><span class="badge ' + badgeClass + '">' + badgeText + '</span></td>'
+                + '</tr>';
+        }
+        el.innerHTML = html || '<tr><td colspan="6" style="text-align:center;padding:24px;color:#94a3b8;">No students found.</td></tr>';
+    } catch (e) {
+        console.error("Failed to render staff student list:", e);
     }
-    el.innerHTML = html;
 };
 
-StaffSections.prototype.renderSubjects = function () {
+StaffSections.prototype.renderSubjects = async function () {
     var el = document.getElementById("mySubjectsGrid");
     if (!el) { return; }
-    var data = MOCK.staffMySubjects, i, subj, colorClass, html;
-    html = "";
-    for (i = 0; i < data.length; i++) {
-        subj = data[i];
-        colorClass = subj.avg_attendance >= 85 ? "safe" : (subj.avg_attendance >= 75 ? "warning" : "critical");
-        html += '<div class="card" style="margin-bottom:16px;">'
-            + '<div class="card-header">'
-            + '  <div><div class="card-title">' + subj.subject_name + '</div>'
-            + '  <div class="text-sm text-muted">' + subj.dept + ' · ' + subj.year + ' · Section ' + subj.section + '</div></div>'
-            + '  <span class="badge badge-blue">Code: ' + subj.id + '</span>'
-            + '</div>'
-            + '<div class="card-body">'
-            + '  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px;">'
-            + '    <div><div class="stat-card-label">Students</div><div class="stat-card-value" style="font-size:22px">' + subj.total_students + '</div></div>'
-            + '    <div><div class="stat-card-label">Classes Held</div><div class="stat-card-value" style="font-size:22px">' + subj.total_classes + '</div></div>'
-            + '    <div><div class="stat-card-label">Avg Attendance</div><div class="stat-card-value" style="font-size:22px;color:var(--blue-500)">' + subj.avg_attendance + '%</div></div>'
-            + '  </div>'
-            + '  <div class="progress-wrap"><div class="progress-bar ' + colorClass + '" style="width:' + subj.avg_attendance + '%"></div></div>'
-            + '  <div class="text-xs text-muted" style="margin-top:6px">Class average attendance</div>'
-            + '</div>'
-            + '</div>';
+    try {
+        const response = await fetch(`${API_BASE_URL}/subjects`);
+        const data = await response.json();
+
+        var i, subj, colorClass, html = "";
+        for (i = 0; i < data.length; i++) {
+            subj = data[i];
+            colorClass = "safe";
+            html += '<div class="card" style="margin-bottom:16px;">'
+                + '<div class="card-header">'
+                + '  <div><div class="card-title">' + subj.subject_name + '</div>'
+                + '  <div class="text-sm text-muted">' + subj.department_name + ' · Code: ' + subj.subject_code + '</div></div>'
+                + '  <span class="badge badge-blue">ID: ' + subj.id + '</span>'
+                + '</div>'
+                + '<div class="card-body">'
+                + '  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px;">'
+                + '    <div><div class="stat-card-label">Staff</div><div class="stat-card-value" style="font-size:16px">' + (subj.staff_name || "Assigned") + '</div></div>'
+                + '    <div><div class="stat-card-label">Credits</div><div class="stat-card-value" style="font-size:22px">' + (subj.credits || "4") + '</div></div>'
+                + '    <div><div class="stat-card-label">Type</div><div class="stat-card-value" style="font-size:16px;color:var(--blue-500)">' + (subj.type || "Theory") + '</div></div>'
+                + '  </div>'
+                + '  <div class="progress-wrap"><div class="progress-bar ' + colorClass + '" style="width:100%"></div></div>'
+                + '  <div class="text-xs text-muted" style="margin-top:6px">Active course module</div>'
+                + '</div>'
+                + '</div>';
+        }
+        el.innerHTML = html || '<div style="color:#94a3b8;padding:24px;text-align:center;">No subjects found.</div>';
+    } catch (e) {
+        console.error("Failed to render staff subjects:", e);
     }
-    el.innerHTML = html;
 };
+
 
 
 /* ============================================================
@@ -715,12 +838,23 @@ function StudentDash(session) {
     this.data = MOCK.studentAttendance;
 }
 
-StudentDash.prototype.init = function () {
-    this.renderProfile();
-    this.renderSubjectBreakdown();
-    this.renderTrendChart();
-    this.renderTrendTable();
-    this.updateRiskCalculator();
+StudentDash.prototype.init = async function () {
+    var user = this.session;
+    if (!user || !document.getElementById("studentNameEl")) { return; }
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/attendance/student?student_id=${user.id}`);
+        const data = await response.json();
+        this.data = data;
+
+        this.renderProfile();
+        this.renderSubjectBreakdown();
+        this.renderTrendChart();
+        this.renderTrendTable();
+        this.updateRiskCalculator();
+    } catch (e) {
+        console.error("Failed to render student dash:", e);
+    }
 };
 
 StudentDash.prototype.renderProfile = function () {
@@ -729,10 +863,10 @@ StudentDash.prototype.renderProfile = function () {
     var el;
 
     el = document.getElementById("studentNameEl"); if (el) { el.textContent = s.name; }
-    el = document.getElementById("studentMetaEl"); if (el) { el.textContent = "CSE · 3rd Year · " + s.email; }
+    el = document.getElementById("studentMetaEl"); if (el) {
+        el.textContent = (s.dept_id == 1 ? "CSE" : "Dept") + " · " + (s.year || "3rd") + " Year · " + s.email;
+    }
     el = document.getElementById("overallPctEl"); if (el) { el.textContent = d.overall_percentage + "%"; }
-    el = document.getElementById("attendedEl"); if (el) { el.textContent = "122"; }
-    el = document.getElementById("missedEl"); if (el) { el.textContent = "10"; }
 
     var parts = s.name.split(" ");
     var initials = parts[0][0] + (parts[1] ? parts[1][0] : "");
@@ -741,8 +875,9 @@ StudentDash.prototype.renderProfile = function () {
 
     el = document.getElementById("overallRiskEl");
     if (el) {
-        el.textContent = d.overall_risk.charAt(0).toUpperCase() + d.overall_risk.slice(1);
-        el.className = "badge badge-" + d.overall_risk;
+        var risk = d.overall_risk.toLowerCase();
+        el.textContent = d.overall_risk.toUpperCase();
+        el.className = "badge badge-" + risk;
     }
 };
 
@@ -753,21 +888,22 @@ StudentDash.prototype.renderSubjectBreakdown = function () {
     html = "";
     for (i = 0; i < subjects.length; i++) {
         subj = subjects[i];
-        risk = subj.risk_category;
+        risk = subj.risk_category.toLowerCase();
         html += '<div class="subject-row">'
             + '<div class="subject-row-header">'
             + '  <span class="subject-row-name">' + subj.subject_name + '</span>'
-            + '  <span class="badge badge-' + risk + '">' + risk.toUpperCase() + '</span>'
+            + '  <span class="badge badge-' + risk + '">' + subj.risk_category.toUpperCase() + '</span>'
             + '</div>'
             + '<div class="flex-between mb-8">'
-            + '  <span class="subject-row-meta">' + subj.present + ' present / ' + subj.absent + ' absent / ' + subj.total_classes + ' total</span>'
+            + '  <span class="subject-row-meta">' + subj.present_count + ' present / ' + subj.absent + ' absent / ' + subj.total_classes + ' total</span>'
             + '  <span class="subject-row-pct ' + risk + '">' + subj.percentage + '%</span>'
             + '</div>'
             + '<div class="progress-wrap"><div class="progress-bar ' + risk + '" style="width:' + subj.percentage + '%"></div></div>'
             + '</div>';
     }
-    el.innerHTML = html;
+    el.innerHTML = html || '<div style="color:#94a3b8;padding:24px;text-align:center;">No subject data found.</div>';
 };
+
 
 StudentDash.prototype.renderTrendChart = function () {
     var charts = new DashCharts(null, "studentTrendChart", "studentTrendLabels");
@@ -814,32 +950,33 @@ function AdminDash(session) {
     this.charts = new DashCharts();
 }
 
-AdminDash.prototype.init = function () {
+AdminDash.prototype.init = async function () {
     if (!document.getElementById("adminContentArea")) { return; }
     var i;
     for (i = 0; i < this.navItems.length; i++) {
         this.navItems[i].addEventListener("click", this.handleNavClick.bind(this));
     }
-    this.charts.renderDeptChart();
-    this.charts.renderTrendChart();
-    this.riskReport.init();
-    this.renderStats();
+    await this.charts.renderDeptChart();
+    await this.charts.renderTrendChart();
+    await this.riskReport.init();
+    await this.renderStats();
 };
 
-AdminDash.prototype.renderStats = function () {
-    var totalStudents = 0, i, dept;
-    for (i = 0; i < MOCK.deptAnalytics.length; i++) { totalStudents += MOCK.deptAnalytics[i].total_students; }
-    var totalSubjects = 0;
-    for (dept in MOCK.subjects) {
-        if (MOCK.subjects.hasOwnProperty(dept)) { totalSubjects += MOCK.subjects[dept].length; }
+AdminDash.prototype.renderStats = async function () {
+    try {
+        const response = await fetch(`${API_BASE_URL}/analytics/dashboard`);
+        const data = await response.json();
+
+        var el;
+        el = document.getElementById("statTotalStudents"); if (el) { el.textContent = data.total_students.toLocaleString(); }
+        el = document.getElementById("statTotalSubjects"); if (el) { el.textContent = data.total_subjects; }
+        el = document.getElementById("statTotalRecords"); if (el) { el.textContent = data.total_records.toLocaleString(); }
+        el = document.getElementById("statAvgAttendance"); if (el) { el.textContent = data.overall_attendance_percentage + "%"; }
+    } catch (e) {
+        console.error("Failed to render admin stats:", e);
     }
-    var el;
-    el = document.getElementById("statTotalStudents"); if (el) { el.textContent = totalStudents.toLocaleString(); }
-    el = document.getElementById("statTotalSubjects"); if (el) { el.textContent = totalSubjects; }
-    el = document.getElementById("statTotalRecords"); if (el) { el.textContent = "98,432"; }
-    el = document.getElementById("statAvgAttendance"); if (el) { el.textContent = "87.4%"; }
-    el = document.getElementById("statAtRisk"); if (el) { el.textContent = "4"; }
 };
+
 
 AdminDash.prototype.handleNavClick = function (event) {
     event.preventDefault();
