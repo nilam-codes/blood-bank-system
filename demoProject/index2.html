@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AttendIQ — Login Portal</title>
+    <meta name="description"
+        content="AttendIQ Institutional Attendance Management System — Secure login portal for Students, Staff, and Administrators." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=IBM+Plex+Sans:wght@300;400;500;600&family=Share+Tech+Mono&display=swap"
+        rel="stylesheet" />
+    <link rel="stylesheet" href="style2.css" />
+</head>
+
+<body>
+    <div class="login-page" id="loginPage">
+
+        <!-- =============================================
+             HEADER
+             ============================================= -->
+        <header class="login-header">
+            <div class="login-logo">
+                <div class="login-logo-icon">A</div>
+                <div>
+                    <div class="login-logo-name">AttendIQ</div>
+                    <span class="login-logo-tagline">Institutional Attendance Management</span>
+                </div>
+            </div>
+            <div class="login-header-right">
+                Academic Year 2024 – 25 &nbsp;|&nbsp; Version 2.0
+            </div>
+        </header>
+
+        <!-- =============================================
+             BODY
+             ============================================= -->
+        <main class="login-body">
+
+            <div class="login-hero-label">Secure Access Portal</div>
+            <h1 class="login-hero-title">Select Your Role to Sign In</h1>
+            <p class="login-hero-sub">
+                This system is intended for use by authorized members of the institution only.
+                All sessions are logged and monitored.
+            </p>
+
+            <!-- Role Cards -->
+            <div class="role-cards" id="roleCards">
+
+                <div class="role-card" id="roleStudent" data-role="student">
+                    <span class="role-check">✓</span>
+                    <div class="role-card-icon student-icon">🎓</div>
+                    <div class="role-card-title">Student</div>
+                    <div class="role-card-desc">View your attendance records, subject-wise breakdown, and risk status.
+                    </div>
+                </div>
+
+                <div class="role-card" id="roleStaff" data-role="staff">
+                    <span class="role-check">✓</span>
+                    <div class="role-card-icon staff-icon">👩‍🏫</div>
+                    <div class="role-card-title">Staff / Faculty</div>
+                    <div class="role-card-desc">Mark and update attendance for your subjects and assigned classes.</div>
+                </div>
+
+                <div class="role-card" id="roleAdmin" data-role="admin">
+                    <span class="role-check">✓</span>
+                    <div class="role-card-icon admin-icon">🛡️</div>
+                    <div class="role-card-title">Administrator</div>
+                    <div class="role-card-desc">Access institution-wide analytics, at-risk reports, and system controls.
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Login Form Panel -->
+            <div class="login-form-panel" id="loginFormPanel">
+
+                <div class="login-form-title" id="loginFormTitle">Student Login</div>
+                <div class="login-form-cred-hint">
+                    Demo credentials:
+                    <span class="cred-pill" id="credEmail">student@college.edu</span>
+                    <span class="cred-pill" id="credPass">student123</span>
+                </div>
+
+                <div class="login-form-fields">
+                    <div>
+                        <label class="login-field-label" for="loginEmail">Institutional Email</label>
+                        <input type="email" id="loginEmail" class="login-field-input" placeholder="you@college.edu"
+                            autocomplete="email" />
+                    </div>
+                    <div>
+                        <label class="login-field-label" for="loginPassword">Password</label>
+                        <input type="password" id="loginPassword" class="login-field-input" placeholder="••••••••"
+                            autocomplete="current-password" />
+                    </div>
+                </div>
+
+                <button class="login-btn" id="loginBtn">Sign In →</button>
+                <div class="login-error-msg" id="loginError">
+                    ⚠ Invalid credentials. Please try again.
+                </div>
+
+            </div>
+
+        </main>
+
+        <!-- =============================================
+             FOOTER
+             ============================================= -->
+        <footer class="login-footer">
+            © 2025 AttendIQ &nbsp;·&nbsp; Institutional Attendance Management System &nbsp;·&nbsp; All rights reserved
+        </footer>
+
+    </div>
+
+    <script src="app2.js"></script>
+
+</body>
+
+</html>

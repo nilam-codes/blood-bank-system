@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AttendIQ — Staff Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=IBM+Plex+Sans:wght@300;400;500;600&family=Share+Tech+Mono&display=swap"
+        rel="stylesheet" />
+    <link rel="stylesheet" href="style2.css" />
+    <style>
+        #markSuccess {
+            display: none;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 18px;
+            border-radius: var(--radius-sm);
+            background: var(--green-100);
+            color: var(--green-600);
+            border-left: 4px solid var(--green-400);
+            font-size: 14px;
+            font-weight: 500;
+            margin-top: 16px;
+        }
+    </style>
+</head>
+
+<body data-page="staff">
+
+    <div class="app-layout">
+
+        <!-- SIDEBAR -->
+        <aside class="sidebar">
+            <div class="sidebar-logo">
+                <div class="sidebar-logo-icon">A</div>
+                <div>
+                    <div class="sidebar-logo-text">AttendIQ</div>
+                    <span class="sidebar-role-badge">Staff Portal</span>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <div class="sidebar-section-label">Attendance</div>
+                <a href="#" class="nav-item active" data-section="mark">
+                    <span class="nav-item-icon">✏️</span> Mark Attendance
+                </a>
+                <a href="#" class="nav-item" data-section="history">
+                    <span class="nav-item-icon">🗂️</span> Session History
+                </a>
+
+                <div class="sidebar-section-label">Reports</div>
+                <a href="#" class="nav-item" data-section="students">
+                    <span class="nav-item-icon">👥</span> My Students
+                </a>
+                <a href="#" class="nav-item" data-section="subjects-list">
+                    <span class="nav-item-icon">📚</span> My Subjects
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="sidebar-profile">
+                    <div class="sidebar-avatar" id="profileAvatar">PM</div>
+                    <div class="sidebar-profile-info">
+                        <div class="sidebar-profile-name" id="profileName">Dr. Priya Menon</div>
+                        <div class="sidebar-profile-role" id="profileRole">Staff</div>
+                    </div>
+                </div>
+                <button class="sidebar-logout" id="logoutBtn">⬅ Sign Out</button>
+            </div>
+        </aside>
+
+        <!-- MAIN CONTENT -->
+        <div class="main-content">
+            <header class="topbar">
+                <div class="topbar-title" id="topbarTitle">Mark Attendance</div>
+                <div class="topbar-actions">
+                    <span class="topbar-greeting">Faculty · Computer Science &amp; Engineering</span>
+                </div>
+            </header>
+
+            <main class="page-body">
+                <div class="breadcrumb">
+                    <span>Home</span>
+                    <span class="breadcrumb-sep">›</span>
+                    <span class="breadcrumb-current" id="breadcrumbCurrent">Mark Attendance</span>
+                </div>
+
+                <!-- ============================================
+                 SECTION 1: MARK ATTENDANCE (default)
+                 ============================================ -->
+                <div id="section-mark" class="page-section">
+                    <div class="card mb-20">
+                        <div class="card-header">
+                            <div class="card-title">New Attendance Session</div>
+                        </div>
+                        <div class="card-body">
+
+                            <div class="form-row cols-3 mb-24">
+                                <div class="form-group">
+                                    <label for="markDept" class="form-label">Department <span
+                                            class="form-required">*</span></label>
+                                    <select id="markDept" class="form-control">
+                                        <option value="">-- Select Department --</option>
+                                        <option value="1">Computer Science &amp; Engineering</option>
+                                        <option value="2">Electronics &amp; Communication</option>
+                                        <option value="3">Mechanical Engineering</option>
+                                        <option value="4">Civil Engineering</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="markSubject" class="form-label">Subject <span
+                                            class="form-required">*</span></label>
+                                    <select id="markSubject" class="form-control" disabled>
+                                        <option value="">-- Select Subject --</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="markDate" class="form-label">Date <span
+                                            class="form-required">*</span></label>
+                                    <input type="date" id="markDate" class="form-control" />
+                                </div>
+                            </div>
+
+                            <!-- Student List -->
+                            <div>
+                                <div class="empty-state" id="attendanceEmptyState">
+                                    <div class="empty-state-icon">📋</div>
+                                    <div class="empty-state-text">Select a department and subject above to load the
+                                        student list.</div>
+                                </div>
+
+                                <div id="attendanceList" style="display:none;">
+                                    <div class="flex-between mb-16">
+                                        <h3 class="section-heading" style="margin:0;">Student List</h3>
+                                        <button class="btn btn-sm btn-secondary" id="markAllPresent">✓ Mark All
+                                            Present</button>
+                                    </div>
+
+                                    <div class="att-list-header">
+                                        <span>Student Name</span>
+                                        <span>Year</span>
+                                        <span style="text-align:center;">Present</span>
+                                        <span style="text-align:center;">Absent</span>
+                                    </div>
+                                    <div id="studentRows"></div>
+
+                                    <div class="mt-20 flex" style="justify-content:flex-end;gap:12px;">
+                                        <button class="btn btn-ghost"
+                                            onclick="APP_MARKER.showEmpty();document.getElementById('markDept').value='';document.getElementById('markSubject').disabled=true;document.getElementById('markSubject').innerHTML='&lt;option value=&quot;&quot;&gt;-- Select Subject --&lt;/option&gt;';">Reset</button>
+                                        <button class="btn btn-primary btn-lg" id="submitAttendance">Submit Attendance
+                                            →</button>
+                                    </div>
+
+                                    <div id="markSuccess">
+                                        ✓ Attendance submitted successfully! Records have been updated.
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ============================================
+                 SECTION 2: SESSION HISTORY
+                 ============================================ -->
+                <div id="section-history" class="page-section hidden">
+                    <div class="stat-grid mb-20">
+                        <div class="stat-card">
+                            <div class="stat-card-top">
+                                <div class="stat-card-icon blue">📅</div>
+                            </div>
+                            <div class="stat-card-label">Sessions This Month</div>
+                            <div class="stat-card-value">18</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-card-top">
+                                <div class="stat-card-icon green">✅</div>
+                            </div>
+                            <div class="stat-card-label">Avg Present</div>
+                            <div class="stat-card-value">28.4</div>
+                            <div class="stat-card-sub">Out of 32 students</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-card-top">
+                                <div class="stat-card-icon amber">📊</div>
+                            </div>
+                            <div class="stat-card-label">Avg Attendance</div>
+                            <div class="stat-card-value">87%</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-card-top">
+                                <div class="stat-card-icon blue">📚</div>
+                            </div>
+                            <div class="stat-card-label">Subjects Covered</div>
+                            <div class="stat-card-value">2</div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">Recent Attendance Sessions</div>
+                            <button class="btn btn-sm btn-ghost">Export CSV</button>
+                        </div>
+                        <div class="data-table-wrap">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Subject</th>
+                                        <th>Dept</th>
+                                        <th>Present</th>
+                                        <th>Absent</th>
+                                        <th>Total</th>
+                                        <th>Attendance %</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="historyTableBody">
+                                    <!-- Rendered by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ============================================
+                 SECTION 3: MY STUDENTS
+                 ============================================ -->
+                <div id="section-students" class="page-section hidden">
+                    <div class="card mb-20">
+                        <div class="card-header">
+                            <div>
+                                <div class="card-title">My Students</div>
+                                <div class="text-sm text-muted mt-8">Students enrolled in your assigned subjects</div>
+                            </div>
+                            <div class="flex gap-8">
+                                <span class="badge badge-safe">Safe: 5</span>
+                                <span class="badge badge-warning">Warning: 2</span>
+                                <span class="badge badge-critical">Critical: 1</span>
+                            </div>
+                        </div>
+                        <div class="data-table-wrap">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Student Name</th>
+                                        <th>Roll Number</th>
+                                        <th>Year</th>
+                                        <th>Attendance %</th>
+                                        <th>Progress</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="staffStudentTable">
+                                    <!-- Rendered by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="card-footer">
+                            <div class="text-sm text-muted">
+                                Showing students for: <strong>Data Structures</strong> &amp; <strong>Operating
+                                    Systems</strong> — CSE Department
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- At-risk students alert -->
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">⚠️ Students Requiring Attention</div>
+                        </div>
+                        <div class="card-body" style="display:flex;flex-direction:column;gap:10px;">
+                            <div class="toast toast-error">🔴 <strong>Karthik Subramaniam</strong> (21CS005) — 52%
+                                overall attendance. Immediate intervention required.</div>
+                            <div class="toast toast-warning">🟡 <strong>Rohan Mehta</strong> (21CS003) — 64% overall
+                                attendance. HOD notice recommended.</div>
+                            <div class="toast toast-warning">🟡 <strong>Vijay Kumar</strong> (21CS007) — 68% overall
+                                attendance. Counselling advised.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ============================================
+                 SECTION 4: MY SUBJECTS
+                 ============================================ -->
+                <div id="section-subjects-list" class="page-section hidden">
+                    <div class="toast toast-info mb-20">
+                        ℹ You are currently assigned <strong>2 subjects</strong> for the academic year 2024–25, Semester
+                        VI.
+                    </div>
+
+                    <div id="mySubjectsGrid">
+                        <!-- Rendered by JS -->
+                    </div>
+
+                    <!-- Timetable placeholder -->
+                    <div class="card mt-20">
+                        <div class="card-header">
+                            <div class="card-title">📅 Weekly Lecture Schedule</div>
+                        </div>
+                        <div class="data-table-wrap">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Day</th>
+                                        <th>Time</th>
+                                        <th>Subject</th>
+                                        <th>Room</th>
+                                        <th>Section</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td class="td-name">Monday</td>
+                                        <td>09:00 – 10:00</td>
+                                        <td>Data Structures</td>
+                                        <td>LH-203</td>
+                                        <td>B</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="td-name">Tuesday</td>
+                                        <td>11:00 – 12:00</td>
+                                        <td>Operating Systems</td>
+                                        <td>LH-105</td>
+                                        <td>A</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="td-name">Wednesday</td>
+                                        <td>09:00 – 10:00</td>
+                                        <td>Data Structures</td>
+                                        <td>LH-203</td>
+                                        <td>B</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="td-name">Thursday</td>
+                                        <td>11:00 – 12:00</td>
+                                        <td>Operating Systems</td>
+                                        <td>LH-105</td>
+                                        <td>A</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="td-name">Friday</td>
+                                        <td>10:00 – 11:00</td>
+                                        <td>Data Structures</td>
+                                        <td>LH-203</td>
+                                        <td>B</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+            </main>
+        </div><!-- /main-content -->
+    </div><!-- /app-layout -->
+
+    <script src="app2.js"></script>
+</body>
+
+</html>

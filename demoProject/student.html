@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AttendIQ — Student Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=IBM+Plex+Sans:wght@300;400;500;600&family=Share+Tech+Mono&display=swap"
+        rel="stylesheet" />
+    <link rel="stylesheet" href="style2.css" />
+</head>
+
+<body data-page="student">
+
+    <div class="app-layout">
+
+        <!-- SIDEBAR -->
+        <aside class="sidebar">
+            <div class="sidebar-logo">
+                <div class="sidebar-logo-icon">A</div>
+                <div>
+                    <div class="sidebar-logo-text">AttendIQ</div>
+                    <span class="sidebar-role-badge">Student Portal</span>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <div class="sidebar-section-label">My Attendance</div>
+                <a href="#" class="nav-item active" data-section="my-attendance">
+                    <span class="nav-item-icon">🏠</span> Overview
+                </a>
+                <a href="#" class="nav-item" data-section="subjects">
+                    <span class="nav-item-icon">📚</span> Subject Breakdown
+                </a>
+                <a href="#" class="nav-item" data-section="trend">
+                    <span class="nav-item-icon">📈</span> Attendance Trend
+                </a>
+
+                <div class="sidebar-section-label">Status</div>
+                <a href="#" class="nav-item" data-section="risk">
+                    <span class="nav-item-icon">⚠️</span> Risk Status
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="sidebar-profile">
+                    <div class="sidebar-avatar" id="profileAvatar">AS</div>
+                    <div class="sidebar-profile-info">
+                        <div class="sidebar-profile-name" id="profileName">Aarav Sharma</div>
+                        <div class="sidebar-profile-role" id="profileRole">Student</div>
+                    </div>
+                </div>
+                <button class="sidebar-logout" id="logoutBtn">⬅ Sign Out</button>
+            </div>
+        </aside>
+
+        <!-- MAIN CONTENT -->
+        <div class="main-content">
+            <header class="topbar">
+                <div class="topbar-title" id="topbarTitle">My Attendance</div>
+                <div class="topbar-actions">
+                    <span class="topbar-greeting">Academic Year 2024 – 25</span>
+                    <button class="btn btn-sm btn-secondary" onclick="window.print()">⬇ Download Report</button>
+                </div>
+            </header>
+
+            <main class="page-body">
+                <div class="breadcrumb">
+                    <span>Home</span>
+                    <span class="breadcrumb-sep">›</span>
+                    <span class="breadcrumb-current" id="breadcrumbCurrent">Overview</span>
+                </div>
+
+                <!-- ============================================
+                 SECTION 1: MY ATTENDANCE (default)
+                 ============================================ -->
+                <div id="section-my-attendance" class="page-section">
+
+                    <!-- Profile Banner -->
+                    <div class="student-overview-card mb-24">
+                        <div class="student-avatar-lg" id="avatarLargeEl">AS</div>
+                        <div class="student-info-block">
+                            <div class="student-name-lg" id="studentNameEl">Aarav Sharma</div>
+                            <div class="student-meta-lg" id="studentMetaEl">CSE · 3rd Year · student@college.edu</div>
+                            <div class="flex gap-8 mt-8">
+                                <span class="badge badge-blue">Roll No: 21CS001</span>
+                                <span class="badge badge-neutral">Semester VI</span>
+                            </div>
+                        </div>
+                        <div class="student-overall-block">
+                            <div class="student-overall-pct" id="overallPctEl">92%</div>
+                            <div class="student-overall-label">Overall Attendance</div>
+                            <div class="flex-center mt-8">
+                                <span class="badge badge-safe" id="overallRiskEl">SAFE</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Stats -->
+                    <div class="stat-grid mb-24">
+                        <div class="stat-card">
+                            <div class="stat-card-top">
+                                <div class="stat-card-icon blue">📚</div>
+                            </div>
+                            <div class="stat-card-label">Subjects Enrolled</div>
+                            <div class="stat-card-value">3</div>
+                            <div class="stat-card-sub">Current semester</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-card-top">
+                                <div class="stat-card-icon green">✅</div>
+                            </div>
+                            <div class="stat-card-label">Classes Attended</div>
+                            <div class="stat-card-value" id="attendedEl">122</div>
+                            <div class="stat-card-sub">Out of 132 total</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-card-top">
+                                <div class="stat-card-icon amber">❌</div>
+                            </div>
+                            <div class="stat-card-label">Classes Missed</div>
+                            <div class="stat-card-value" id="missedEl">10</div>
+                            <div class="stat-card-sub">Across all subjects</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-card-top">
+                                <div class="stat-card-icon green">🛡️</div>
+                            </div>
+                            <div class="stat-card-label">Current Status</div>
+                            <div class="stat-card-value" style="color:var(--green-600)">Safe</div>
+                            <div class="stat-card-sub">Above 75% threshold</div>
+                        </div>
+                    </div>
+
+                    <!-- Notices -->
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">📢 Important Notices</div>
+                        </div>
+                        <div class="card-body" style="display:flex;flex-direction:column;gap:12px;">
+                            <div class="toast toast-info">ℹ Minimum <strong>75%</strong> attendance is mandatory to sit
+                                for end-semester examinations.</div>
+                            <div class="toast toast-warning">⚠ Students below 75% will receive a formal notice from the
+                                Head of Department.</div>
+                            <div class="toast toast-success">✓ Attendance records are updated daily by 6:00 PM on all
+                                working days.</div>
+                            <div class="toast toast-info">ℹ For attendance corrections or discrepancies, contact your
+                                class advisor.</div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- ============================================
+                 SECTION 2: SUBJECT BREAKDOWN
+                 ============================================ -->
+                <div id="section-subjects" class="page-section hidden">
+                    <div class="card">
+                        <div class="card-header">
+                            <div>
+                                <div class="card-title">Subject-wise Attendance Breakdown</div>
+                                <div class="text-sm text-muted mt-8">Semester VI — Computer Science &amp; Engineering
+                                </div>
+                            </div>
+                            <span class="status-dot live" title="Updated daily"></span>
+                        </div>
+                        <div class="card-body">
+                            <div id="subjectBreakdownEl">
+                                <!-- Rendered by JS -->
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <div class="flex-between">
+                                <span class="text-sm text-muted">Legend: <span class="badge badge-safe">SAFE ≥75%</span>
+                                    &nbsp; <span class="badge badge-warning">WARNING 60–74%</span> &nbsp; <span
+                                        class="badge badge-critical">CRITICAL &lt;60%</span></span>
+                                <button class="btn btn-sm btn-secondary" onclick="window.print()">Export PDF</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Summary table -->
+                    <div class="card mt-20">
+                        <div class="card-header">
+                            <div class="card-title">Quick Summary</div>
+                        </div>
+                        <div class="data-table-wrap">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Subject</th>
+                                        <th>Total Classes</th>
+                                        <th>Present</th>
+                                        <th>Absent</th>
+                                        <th>Percentage</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td class="td-name">Data Structures</td>
+                                        <td class="td-mono">48</td>
+                                        <td class="td-mono" style="color:var(--green-600)">44</td>
+                                        <td class="td-mono" style="color:var(--red-500)">4</td>
+                                        <td class="td-mono">91.7%</td>
+                                        <td><span class="badge badge-safe">SAFE</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="td-name">Operating Systems</td>
+                                        <td class="td-mono">40</td>
+                                        <td class="td-mono" style="color:var(--green-600)">38</td>
+                                        <td class="td-mono" style="color:var(--red-500)">2</td>
+                                        <td class="td-mono">95.0%</td>
+                                        <td><span class="badge badge-safe">SAFE</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="td-name">DBMS</td>
+                                        <td class="td-mono">44</td>
+                                        <td class="td-mono" style="color:var(--green-600)">40</td>
+                                        <td class="td-mono" style="color:var(--red-500)">4</td>
+                                        <td class="td-mono">90.9%</td>
+                                        <td><span class="badge badge-safe">SAFE</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ============================================
+                 SECTION 3: TREND
+                 ============================================ -->
+                <div id="section-trend" class="page-section hidden">
+                    <div class="chart-section mb-20">
+                        <div class="chart-header">
+                            <div>
+                                <div class="chart-title">Monthly Attendance Trend (2024)</div>
+                                <div class="chart-sub">Institutional average attendance — month over month</div>
+                            </div>
+                            <span class="badge badge-blue">Annual View</span>
+                        </div>
+                        <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:6px;">
+                            <div class="trend-labels-y"><span>100%</span><span>80%</span><span>60%</span></div>
+                            <div id="studentTrendChart" class="trend-chart" style="flex:1;"></div>
+                        </div>
+                        <div class="trend-labels-x" id="studentTrendLabels"></div>
+                    </div>
+
+                    <!-- Month-by-month table -->
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">Month-wise Data</div>
+                        </div>
+                        <div class="data-table-wrap">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Month</th>
+                                        <th>Attendance %</th>
+                                        <th>Trend Bar</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="trendTableBody">
+                                    <!-- Rendered by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="chart-grid mt-20">
+                        <div class="card">
+                            <div class="card-header">
+                                <div class="card-title">🏆 Best Month</div>
+                            </div>
+                            <div class="card-body text-center">
+                                <div style="font-size:32px;margin-bottom:6px;">🎉</div>
+                                <div class="stat-card-value" style="font-size:32px;color:var(--green-600)">92%</div>
+                                <div class="stat-card-label mt-8">October 2024</div>
+                                <div class="text-sm text-muted mt-8">Highest attendance month of the year</div>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-header">
+                                <div class="card-title">📉 Lowest Month</div>
+                            </div>
+                            <div class="card-body text-center">
+                                <div style="font-size:32px;margin-bottom:6px;">⚠️</div>
+                                <div class="stat-card-value" style="font-size:32px;color:var(--amber-500)">76%</div>
+                                <div class="stat-card-label mt-8">June 2024</div>
+                                <div class="text-sm text-muted mt-8">Lowest month — near warning threshold</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ============================================
+                 SECTION 4: RISK STATUS
+                 ============================================ -->
+                <div id="section-risk" class="page-section hidden">
+                    <div class="chart-grid mb-20">
+
+                        <!-- Current Status Card -->
+                        <div class="card">
+                            <div class="card-header">
+                                <div class="card-title">🛡️ Your Current Risk Status</div>
+                            </div>
+                            <div class="card-body text-center" style="padding:32px;">
+                                <div style="font-size:48px;margin-bottom:12px;">✅</div>
+                                <div class="stat-card-value" style="font-size:48px;color:var(--green-600)">SAFE</div>
+                                <div class="stat-card-label mt-8">Overall Attendance: 92%</div>
+                                <div class="divider"></div>
+                                <div class="toast toast-success">You are well above the 75% required threshold. Keep it
+                                    up!</div>
+                                <div class="mt-16">
+                                    <div class="text-sm text-muted mb-8">Can still miss:</div>
+                                    <div style="font-family:var(--font-mono);font-size:40px;font-weight:700;color:var(--text-dark)"
+                                        id="canMissEl">3</div>
+                                    <div class="text-sm text-muted">more classes before entering the warning zone</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Threshold Guide -->
+                        <div class="card">
+                            <div class="card-header">
+                                <div class="card-title">📋 Attendance Thresholds</div>
+                            </div>
+                            <div class="card-body" style="display:flex;flex-direction:column;gap:20px;">
+                                <div>
+                                    <div class="flex-between mb-8">
+                                        <span class="font-bold" style="color:var(--green-600)">🟢 Safe Zone</span>
+                                        <span class="badge badge-safe">≥ 75%</span>
+                                    </div>
+                                    <div class="progress-wrap">
+                                        <div class="progress-bar safe" style="width:92%"></div>
+                                    </div>
+                                    <div class="text-xs text-muted mt-8">Your current: 92% — No action required</div>
+                                </div>
+                                <div class="divider"></div>
+                                <div>
+                                    <div class="flex-between mb-8">
+                                        <span class="font-bold" style="color:var(--amber-500)">🟡 Warning Zone</span>
+                                        <span class="badge badge-warning">60–74%</span>
+                                    </div>
+                                    <div class="progress-wrap">
+                                        <div class="progress-bar warning" style="width:67%"></div>
+                                    </div>
+                                    <div class="text-xs text-muted mt-8">HOD notice sent, required to attend extra
+                                        classes</div>
+                                </div>
+                                <div class="divider"></div>
+                                <div>
+                                    <div class="flex-between mb-8">
+                                        <span class="font-bold" style="color:var(--red-500)">🔴 Critical Zone</span>
+                                        <span class="badge badge-critical">&lt; 60%</span>
+                                    </div>
+                                    <div class="progress-wrap">
+                                        <div class="progress-bar critical" style="width:47%"></div>
+                                    </div>
+                                    <div class="text-xs text-muted mt-8">Debarred from examinations — requires Principal
+                                        approval</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Policy Notice -->
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">📜 Attendance Policy</div>
+                        </div>
+                        <div class="card-body" style="display:flex;flex-direction:column;gap:12px;">
+                            <div class="toast toast-info">ℹ A minimum of <strong>75%</strong> attendance in each subject
+                                is mandatory for appearing in end-semester examinations.</div>
+                            <div class="toast toast-warning">⚠ Students with attendance between 60–74% will be issued a
+                                formal warning letter and must meet their faculty advisor.</div>
+                            <div class="toast toast-error">🚫 Students below 60% will be debarred from examinations and
+                                must apply for special consideration from the Principal's office.</div>
+                            <div class="toast toast-success">✓ Medical leave and official duty absences are considered
+                                on submission of valid documents to the HOD within 3 working days.</div>
+                        </div>
+                    </div>
+                </div>
+
+            </main>
+        </div><!-- /main-content -->
+    </div><!-- /app-layout -->
+
+    <script src="app2.js"></script>
+</body>
+
+</html>

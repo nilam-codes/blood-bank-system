@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AttendIQ — Admin Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=IBM+Plex+Sans:wght@300;400;500;600&family=Share+Tech+Mono&display=swap"
+        rel="stylesheet" />
+    <link rel="stylesheet" href="style2.css" />
+</head>
+
+<body data-page="admin">
+
+    <div class="app-layout">
+
+        <!-- SIDEBAR -->
+        <aside class="sidebar">
+            <div class="sidebar-logo">
+                <div class="sidebar-logo-icon">A</div>
+                <div>
+                    <div class="sidebar-logo-text">AttendIQ</div>
+                    <span class="sidebar-role-badge">Admin Portal</span>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <div class="sidebar-section-label">Analytics</div>
+                <a href="#" class="nav-item active admin-nav-item" data-section="overview">
+                    <span class="nav-item-icon">📊</span> Overview
+                </a>
+                <a href="#" class="nav-item admin-nav-item" data-section="atrisk">
+                    <span class="nav-item-icon">⚠️</span> At-Risk Report
+                    <span class="nav-item-badge">4</span>
+                </a>
+                <a href="#" class="nav-item admin-nav-item" data-section="attendance">
+                    <span class="nav-item-icon">🗂️</span> Attendance Register
+                </a>
+
+                <div class="sidebar-section-label">Administration</div>
+                <a href="#" class="nav-item admin-nav-item" data-section="manage">
+                    <span class="nav-item-icon">⚙️</span> Manage Institution
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="sidebar-profile">
+                    <div class="sidebar-avatar" id="profileAvatar" style="background:var(--gold-400)">RV</div>
+                    <div class="sidebar-profile-info">
+                        <div class="sidebar-profile-name" id="profileName">Dr. R. Venkat</div>
+                        <div class="sidebar-profile-role" id="profileRole">Admin</div>
+                    </div>
+                </div>
+                <button class="sidebar-logout" id="logoutBtn">⬅ Sign Out</button>
+            </div>
+        </aside>
+
+        <!-- MAIN CONTENT -->
+        <div class="main-content" id="adminContentArea">
+            <header class="topbar">
+                <div class="topbar-title" id="topbarTitle">Overview Dashboard</div>
+                <div class="topbar-actions">
+                    <span class="topbar-greeting">Academic Year 2024 – 25</span>
+                    <button class="btn btn-sm btn-primary"
+                        onclick="alert('Report generation would trigger a backend PDF export in production.')">Generate
+                        Report</button>
+                </div>
+            </header>
+
+            <main class="page-body">
+                <div class="breadcrumb">
+                    <span>Home</span>
+                    <span class="breadcrumb-sep">›</span>
+                    <span class="breadcrumb-current" id="breadcrumbCurrent">Overview Dashboard</span>
+                </div>
+
+                <!-- ============================================
+                 SECTION 1: OVERVIEW (default)
+                 ============================================ -->
+                <div id="section-overview" class="admin-section">
+
+                    <!-- Summary Stats -->
+                    <div class="stat-grid">
+                        <div class="stat-card">
+                            <div class="stat-card-top">
+                                <div class="stat-card-icon blue">👥</div>
+                            </div>
+                            <div class="stat-card-label">Total Students</div>
+                            <div class="stat-card-value" id="statTotalStudents">1,248</div>
+                            <div class="stat-card-bar"></div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-card-top">
+                                <div class="stat-card-icon amber">📚</div>
+                            </div>
+                            <div class="stat-card-label">Active Subjects</div>
+                            <div class="stat-card-value" id="statTotalSubjects">9</div>
+                            <div class="stat-card-bar" style="background:var(--amber-400)"></div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-card-top">
+                                <div class="stat-card-icon green">📝</div>
+                            </div>
+                            <div class="stat-card-label">Attendance Records</div>
+                            <div class="stat-card-value" id="statTotalRecords">98,432</div>
+                            <div class="stat-card-bar" style="background:var(--green-400)"></div>
+                        </div>
+                        <div class="stat-card" style="box-shadow:0 0 0 2px var(--blue-400) inset;">
+                            <div class="stat-card-top">
+                                <div class="stat-card-icon blue">📈</div>
+                            </div>
+                            <div class="stat-card-label">Avg Attendance</div>
+                            <div class="stat-card-value" id="statAvgAttendance" style="color:var(--blue-500)">87.4%
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Charts -->
+                    <div class="chart-grid">
+                        <div class="chart-section">
+                            <div class="chart-header">
+                                <div>
+                                    <div class="chart-title">Department Attendance Comparison</div>
+                                    <div class="chart-sub">Average attendance percentage per department</div>
+                                </div>
+                            </div>
+                            <div class="bar-chart" id="deptChart"></div>
+                        </div>
+                        <div class="chart-section">
+                            <div class="chart-header">
+                                <div>
+                                    <div class="chart-title">Institutional Monthly Trend</div>
+                                    <div class="chart-sub">Month-wise attendance patterns — 2024</div>
+                                </div>
+                                <span class="badge badge-neutral">2024</span>
+                            </div>
+                            <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:6px;">
+                                <div class="trend-labels-y"><span>100%</span><span>80%</span><span>60%</span></div>
+                                <div class="trend-chart" id="trendChart" style="flex:1;"></div>
+                            </div>
+                            <div class="trend-labels-x" id="trendLabelsX"></div>
+                        </div>
+                    </div>
+
+                    <!-- Department table summary -->
+                    <div class="card mt-20">
+                        <div class="card-header">
+                            <div class="card-title">Department Summary</div>
+                        </div>
+                        <div class="data-table-wrap">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Department</th>
+                                        <th>Students</th>
+                                        <th>Avg Attendance</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td class="td-name">Computer Science &amp; Engineering</td>
+                                        <td class="td-mono">320</td>
+                                        <td class="td-mono">91%</td>
+                                        <td><span class="badge badge-safe">SAFE</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="td-name">Electronics &amp; Communication</td>
+                                        <td class="td-mono">210</td>
+                                        <td class="td-mono">84%</td>
+                                        <td><span class="badge badge-safe">SAFE</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="td-name">Mechanical Engineering</td>
+                                        <td class="td-mono">280</td>
+                                        <td class="td-mono">72%</td>
+                                        <td><span class="badge badge-critical">CRITICAL</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="td-name">Civil Engineering</td>
+                                        <td class="td-mono">180</td>
+                                        <td class="td-mono">88%</td>
+                                        <td><span class="badge badge-safe">SAFE</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="td-name">Information Technology</td>
+                                        <td class="td-mono">195</td>
+                                        <td class="td-mono">95%</td>
+                                        <td><span class="badge badge-safe">SAFE</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="td-name">Electrical Engineering</td>
+                                        <td class="td-mono">163</td>
+                                        <td class="td-mono">79%</td>
+                                        <td><span class="badge badge-warning">WARNING</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- ============================================
+                 SECTION 2: AT-RISK REPORT
+                 ============================================ -->
+                <div id="section-atrisk" class="admin-section hidden">
+
+                    <!-- Risk summary row -->
+                    <div class="card mb-20">
+                        <div class="card-body">
+                            <div class="risk-summary-row">
+                                <!-- SVG Pie chart — IMPORTANT: must be <svg> not <div> -->
+                                <div class="risk-pie-wrap">
+                                    <svg class="risk-pie" id="riskPie" viewBox="0 0 120 120"
+                                        style="width:130px;height:130px;"></svg>
+                                    <div class="pie-legend" id="pieLegend"></div>
+                                </div>
+                                <!-- Mini stat cards -->
+                                <div class="risk-stat-mini-cards" style="flex:1;">
+                                    <div class="risk-stat-mini mini-critical">
+                                        <div class="risk-mini-val" id="criticalCount">0</div>
+                                        <div class="risk-mini-label">Critical (&lt; 60%)</div>
+                                    </div>
+                                    <div class="risk-stat-mini mini-warning">
+                                        <div class="risk-mini-val" id="warningCount">0</div>
+                                        <div class="risk-mini-label">Warning (60–74%)</div>
+                                    </div>
+                                    <div class="risk-stat-mini mini-safe">
+                                        <div class="risk-mini-val" id="safeCount">0</div>
+                                        <div class="risk-mini-label">Safe (≥ 75%)</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Filters + Table -->
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">At-Risk Students List</div>
+                            <button class="btn btn-sm btn-ghost"
+                                onclick="alert('CSV export would download the filtered table in production.')">Export
+                                CSV</button>
+                        </div>
+                        <div class="card-body" style="padding:16px 20px 0;">
+                            <div class="risk-filter-bar">
+                                <span class="text-sm font-bold" style="margin-right:4px;">Filter:</span>
+                                <button class="risk-filter-btn active" data-risk="all">All Students</button>
+                                <button class="risk-filter-btn" data-risk="critical">🔴 Critical</button>
+                                <button class="risk-filter-btn" data-risk="warning">🟡 Warning</button>
+                                <button class="risk-filter-btn" data-risk="safe">🟢 Safe</button>
+                            </div>
+                        </div>
+                        <div class="data-table-wrap">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Student Name</th>
+                                        <th>Email ID</th>
+                                        <th>Department</th>
+                                        <th>Year</th>
+                                        <th>Attendance %</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="riskTableBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- ============================================
+                 SECTION 3: ATTENDANCE REGISTER
+                 ============================================ -->
+                <div id="section-attendance" class="admin-section hidden">
+
+                    <!-- Filters -->
+                    <div class="card mb-20">
+                        <div class="card-header">
+                            <div class="card-title">Browse Attendance Register</div>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">Department</label>
+                                    <select class="form-control">
+                                        <option>-- All Departments --</option>
+                                        <option>Computer Science &amp; Engineering</option>
+                                        <option>Electronics &amp; Communication</option>
+                                        <option>Mechanical Engineering</option>
+                                        <option>Civil Engineering</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Subject</label>
+                                    <select class="form-control">
+                                        <option>-- All Subjects --</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">From Date</label>
+                                    <input type="date" class="form-control" />
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">To Date</label>
+                                    <input type="date" class="form-control" />
+                                </div>
+                            </div>
+                            <div class="mt-16 flex" style="gap:10px;">
+                                <button class="btn btn-primary">Search Register</button>
+                                <button class="btn btn-ghost">Reset Filters</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sample data table -->
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">Attendance Register — CSE · Data Structures</div>
+                            <button class="btn btn-sm btn-secondary">Export Excel</button>
+                        </div>
+                        <div class="data-table-wrap">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Student Name</th>
+                                        <th>Roll No.</th>
+                                        <th>Subject</th>
+                                        <th>Status</th>
+                                        <th>Marked By</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>2026-02-25</td>
+                                        <td class="td-name">Aarav Sharma</td>
+                                        <td class="td-mono">21CS001</td>
+                                        <td>Data Structures</td>
+                                        <td><span class="badge badge-safe">PRESENT</span></td>
+                                        <td>Dr. Priya Menon</td>
+                                    </tr>
+                                    <tr>
+                                        <td>2026-02-25</td>
+                                        <td class="td-name">Divya Krishnan</td>
+                                        <td class="td-mono">21CS002</td>
+                                        <td>Data Structures</td>
+                                        <td><span class="badge badge-safe">PRESENT</span></td>
+                                        <td>Dr. Priya Menon</td>
+                                    </tr>
+                                    <tr>
+                                        <td>2026-02-25</td>
+                                        <td class="td-name">Rohan Mehta</td>
+                                        <td class="td-mono">21CS003</td>
+                                        <td>Data Structures</td>
+                                        <td><span class="badge badge-critical">ABSENT</span></td>
+                                        <td>Dr. Priya Menon</td>
+                                    </tr>
+                                    <tr>
+                                        <td>2026-02-25</td>
+                                        <td class="td-name">Sneha Patel</td>
+                                        <td class="td-mono">21CS004</td>
+                                        <td>Data Structures</td>
+                                        <td><span class="badge badge-safe">PRESENT</span></td>
+                                        <td>Dr. Priya Menon</td>
+                                    </tr>
+                                    <tr>
+                                        <td>2026-02-25</td>
+                                        <td class="td-name">Karthik Subramaniam</td>
+                                        <td class="td-mono">21CS005</td>
+                                        <td>Data Structures</td>
+                                        <td><span class="badge badge-critical">ABSENT</span></td>
+                                        <td>Dr. Priya Menon</td>
+                                    </tr>
+                                    <tr>
+                                        <td>2026-02-24</td>
+                                        <td class="td-name">Aarav Sharma</td>
+                                        <td class="td-mono">21CS001</td>
+                                        <td>Operating Systems</td>
+                                        <td><span class="badge badge-safe">PRESENT</span></td>
+                                        <td>Prof. Arjun Nair</td>
+                                    </tr>
+                                    <tr>
+                                        <td>2026-02-24</td>
+                                        <td class="td-name">Divya Krishnan</td>
+                                        <td class="td-mono">21CS002</td>
+                                        <td>Operating Systems</td>
+                                        <td><span class="badge badge-safe">PRESENT</span></td>
+                                        <td>Prof. Arjun Nair</td>
+                                    </tr>
+                                    <tr>
+                                        <td>2026-02-24</td>
+                                        <td class="td-name">Rohan Mehta</td>
+                                        <td class="td-mono">21CS003</td>
+                                        <td>Operating Systems</td>
+                                        <td><span class="badge badge-safe">PRESENT</span></td>
+                                        <td>Prof. Arjun Nair</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ============================================
+                 SECTION 4: MANAGE INSTITUTION
+                 ============================================ -->
+                <div id="section-manage" class="admin-section hidden">
+
+                    <div class="toast toast-info mb-20">
+                        ℹ Administrator controls. All actions are logged in the system audit trail.
+                    </div>
+
+                    <!-- Quick Actions Grid -->
+                    <h3 class="section-heading">Quick Actions</h3>
+                    <div class="quick-actions-grid mb-24">
+                        <div class="quick-action-card" onclick="alert('Student enrollment form would open here.')">
+                            <div class="qa-icon">🎓</div>
+                            <div>
+                                <div class="qa-label">Add New Student</div>
+                                <div class="qa-hint">Enroll a student into a department</div>
+                            </div>
+                        </div>
+                        <div class="quick-action-card" onclick="alert('Staff registration form would open here.')">
+                            <div class="qa-icon" style="background:#dcfce7;">👩‍🏫</div>
+                            <div>
+                                <div class="qa-label">Add Staff Member</div>
+                                <div class="qa-hint">Create faculty login credentials</div>
+                            </div>
+                        </div>
+                        <div class="quick-action-card" onclick="alert('Subject management panel would open here.')">
+                            <div class="qa-icon" style="background:#fef3c7;">📚</div>
+                            <div>
+                                <div class="qa-label">Manage Subjects</div>
+                                <div class="qa-hint">Assign subjects to classes &amp; faculty</div>
+                            </div>
+                        </div>
+                        <div class="quick-action-card" onclick="alert('Threshold settings panel would open here.')">
+                            <div class="qa-icon" style="background:#fee2e2;">⚙️</div>
+                            <div>
+                                <div class="qa-label">System Settings</div>
+                                <div class="qa-hint">Configure thresholds &amp; academic rules</div>
+                            </div>
+                        </div>
+                        <div class="quick-action-card"
+                            onclick="alert('Automated alerts configuration panel would open here.')">
+                            <div class="qa-icon" style="background:#dbeafe;">✉️</div>
+                            <div>
+                                <div class="qa-label">Automated Alerts</div>
+                                <div class="qa-hint">Notice templates &amp; delivery schedules</div>
+                            </div>
+                        </div>
+                        <div class="quick-action-card" onclick="alert('Database export process would begin here.')">
+                            <div class="qa-icon" style="background:#ede9fe;">🗄️</div>
+                            <div>
+                                <div class="qa-label">Data Backup</div>
+                                <div class="qa-hint">Export full database &amp; attendance logs</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- User management -->
+                    <h3 class="section-heading">User Management</h3>
+                    <div class="card mb-20">
+                        <div class="card-header">
+                            <div class="card-title">Registered Users</div>
+                            <button class="btn btn-sm btn-primary"
+                                onclick="alert('User creation form would open here.')">+ Add User</button>
+                        </div>
+                        <div class="data-table-wrap">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Email</th>
+                                        <th>Role</th>
+                                        <th>Department</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td class="td-name">Dr. R. Venkat</td>
+                                        <td>admin@college.edu</td>
+                                        <td><span class="badge badge-blue">Admin</span></td>
+                                        <td>Administration</td>
+                                        <td><span class="badge badge-safe">Active</span></td>
+                                        <td><button class="btn btn-sm btn-ghost" style="padding:4px 10px;">Edit</button>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="td-name">Dr. Priya Menon</td>
+                                        <td>staff@college.edu</td>
+                                        <td><span class="badge badge-neutral">Staff</span></td>
+                                        <td>CSE</td>
+                                        <td><span class="badge badge-safe">Active</span></td>
+                                        <td><button class="btn btn-sm btn-ghost" style="padding:4px 10px;">Edit</button>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="td-name">Aarav Sharma</td>
+                                        <td>student@college.edu</td>
+                                        <td><span class="badge badge-neutral">Student</span></td>
+                                        <td>CSE</td>
+                                        <td><span class="badge badge-safe">Active</span></td>
+                                        <td><button class="btn btn-sm btn-ghost" style="padding:4px 10px;">Edit</button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                </div>
+
+            </main>
+        </div><!-- /main-content -->
+    </div><!-- /app-layout -->
+
+    <script src="app2.js"></script>
+</body>
+
+</html>
